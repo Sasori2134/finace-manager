@@ -75,10 +75,13 @@ class AddIncomeCreateApiView(generics.CreateAPIView):
 def balance(request,user_id):
     expenses = Transaction_data.objects.filter(user_id=user_id).aggregate(price = Sum('price'))
     income = Income.objects.filter(user_id=user_id).aggregate(income = Sum('income'))
-    if income['income'] and expenses['price']:
+    if expenses['price'] is None:
+        expenses['price'] = 0
+    if income['income'] is None:
+        income['income'] = 0
+    if income['income'] is not None and expenses['price'] is not None:
         balance = round(income['income'] - expenses['price'],2)
         return Response({'balance': balance})
-    return Response({'message' : 'Balance Not Avaliable'})
 
 
 @api_view(['POST'])
