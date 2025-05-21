@@ -94,6 +94,6 @@ def login(request):
 def register(request):
     try:
         user = User.objects.create_user(username = request.data['username'], password = request.data['password'])
-        return Response(status = 200)
+        return Response(status = 201)
     except:
         return Response({'message' : 'Username Is Already In Use'}, status = 409)
