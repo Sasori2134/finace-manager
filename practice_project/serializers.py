@@ -42,4 +42,3 @@ class IncomeSerializer(serializers.ModelSerializer):
             'date'
         ]
 
-

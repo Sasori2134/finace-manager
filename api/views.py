@@ -5,6 +5,7 @@ from .models import Transaction_data, Income
 from django.db.models import Avg, Max, Sum
 from django.db.models.functions import TruncMonth,TruncYear
 from rest_framework import generics, permissions, authentication
+from django.contrib.auth.models import User, auth
 
 
 # Create your views here.
@@ -12,8 +13,8 @@ from rest_framework import generics, permissions, authentication
 class TransactiondataCreateApiView(generics.CreateAPIView):
     queryset = Transaction_data.objects.all()
     serializer_class = ItemSerializer
-    authentication_classes = [authentication.SessionAuthentication]
-    permission_classes = [permissions.DjangoModelPermissions]
+    # authentication_classes = [authentication.SessionAuthentication]
+    # permission_classes = [permissions.DjangoModelPermissions]
 
     def perform_create(self,serializer):
         serializer.save()
@@ -25,17 +26,17 @@ class TransactiondataDeleteApiView(generics.DestroyAPIView):
         
 
 
-@api_view(['POST'])
+@api_view(['GET'])
 def average_max(request, user_id):
-    spending_average = Transaction_data.objects.filter(user_id = user_id).aggregate(Avg('price'), Max('price'))
-    mean, maximum = round(spending_average['price__avg'],2), spending_average['price__max']
-    return Response({'average': mean,'max' : maximum})
+    spending_average = Transaction_data.objects.filter(user_id = user_id).aggregate(avg = Avg('price'), max = Max('price'))
+    mean, maximum = round(spending_average['avg'],2), spending_average['max']
+    return Response({'average': mean,'max' : maximum}, status=200)
 
 
 # aq ginda date-dan date-mde shecvale mere exla mushaobs ragac pontshi XD
 @api_view(['GET'])
 def filtering_expenses(request, user_id):
-    serializer = FilteredExpansesInputSerializer(data = request.GET)
+    serializer = FilteredExpansesInputSerializer(data = request.data)
     if serializer.is_valid():
         if serializer.validated_data.get('date') is None and serializer.validated_data.get('category') is None:
             filtered = Transaction_data.objects.filter(user_id=user_id)
@@ -47,7 +48,7 @@ def filtering_expenses(request, user_id):
             filtered = Transaction_data.objects.filter(user_id=user_id, date=serializer.validated_data.get('date'), category=serializer.validated_data.get('category'))
             serialized = FilteredExpansesSerializer(filtered, many=True)
         return Response(serialized.data)
-    return Response({'message':'Invalid Input'})
+    return Response({'message':'Invalid Input'}, status = 409)
 
 
 #shecvale es sum_of_expanses
@@ -79,3 +80,20 @@ def balance(request,user_id):
         return Response({'balance': balance})
     return Response({'message' : 'Balance Not Avaliable'})
 
+
+@api_view(['POST'])
+def login(request):
+    user = auth.authenticate(username = request.data['username'], password = request.data['password'])
+    if user is not None:
+        return Response(status = 200)
+    else:
+        return Response({'message' : 'Username Or Password Is Invalid Please Try Again'}, status = 409)
+
+
+@api_view(['POST'])
+def register(request):
+    try:
+        user = User.objects.create_user(username = request.data['username'], password = request.data['password'])
+        return Response(status = 200)
+    except:
+        return Response({'message' : 'Username Is Already In Use'}, status = 409)
