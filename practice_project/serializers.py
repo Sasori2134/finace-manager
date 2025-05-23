@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from api.models import Transaction_data, Income
+from api.models import Transaction_data, Income, Budget
 
 
 class ItemSerializer(serializers.ModelSerializer):
@@ -42,3 +42,10 @@ class IncomeSerializer(serializers.ModelSerializer):
             'date'
         ]
 
+class BudgetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Budget
+        fields = [
+            'user_id',
+            'budget'
+        ]

@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view
-from practice_project.serializers import ItemSerializer, IncomeSerializer, FilteredExpansesSerializer, FilteredExpansesInputSerializer
+from practice_project.serializers import ItemSerializer, IncomeSerializer, FilteredExpansesSerializer, FilteredExpansesInputSerializer, BudgetSerializer
 from rest_framework.response import Response
-from .models import Transaction_data, Income
+from .models import Transaction_data, Income, Budget
 from django.db.models import Avg, Max, Sum
 from django.db.models.functions import TruncMonth,TruncYear
 from rest_framework import generics, permissions, authentication
@@ -16,7 +16,7 @@ class TransactiondataCreateApiView(generics.CreateAPIView):
     # authentication_classes = [authentication.SessionAuthentication]
     # permission_classes = [permissions.DjangoModelPermissions]
 
-    def perform_create(self,serializer):
+    def perform_create(self, serializer):
         serializer.save()
 
 
@@ -51,9 +51,8 @@ def filtering_expenses(request, user_id):
     return Response({'message':'Invalid Input'}, status = 409)
 
 
-#shecvale es sum_of_expanses
 @api_view(['GET'])
-def sum_of_values(request,user_id):
+def sum_of_expenses(request, user_id):
     filering = Transaction_data.objects.filter(user_id=user_id)
     grouped_by_month = filering.annotate(month = TruncMonth('date')).values('month').annotate(monthly_sum = Sum('price')).order_by('month')
     grouped_by_day = filering.values('date').annotate(dayly_sum = Sum('price')).order_by('date')
@@ -66,13 +65,13 @@ class AddIncomeCreateApiView(generics.CreateAPIView):
     queryset = Income.objects.all()
     serializer_class = IncomeSerializer
 
-    def perform_create(self,serializer):
+    def perform_create(self, serializer):
         serializer.save()
 
 
 #rodesac ar aris income an expense sheyvanili abrunebs mesijs Balance not avaliable gaaswore ise rom tu ar aris sheyvanili mashin 0 iyos
 @api_view(['GET'])
-def balance(request,user_id):
+def balance(request, user_id):
     expenses = Transaction_data.objects.filter(user_id=user_id).aggregate(price = Sum('price'))
     income = Income.objects.filter(user_id=user_id).aggregate(income = Sum('income'))
     if expenses['price'] is None:
@@ -85,11 +84,27 @@ def balance(request,user_id):
 
 
 @api_view(['GET'])
-def last_30_days(request,user_id):
-    expenses = Transaction_data.objects.filter(user_id=user_id).values('price')[::-1][:30]
-    income = Income.objects.filter(user_id=user_id).values('income')[::-1][:30]
+def last_30_days(request, user_id):
+    expenses = Transaction_data.objects.filter(user_id = user_id).values('price')[::-1][:30]
+    income = Income.objects.filter(user_id = user_id).values('income')[::-1][:30]
     return Response({'expenses' : sum([i['price'] for i in expenses]), 'income' : sum([i['income'] for i in income])})
 
+
+class BudgetCreateApiView(generics.CreateAPIView):
+    queryset = Budget.objects.all()
+    serializer_class = BudgetSerializer
+
+
+@api_view(['GET'])
+def check_budget(request, user_id):
+    expenses = Transaction_data.objects.filter(user_id = user_id).values('price')[::-1][:30]
+    budget = Budget.objects.filter(user_id = user_id).values('budget')[0]
+    sum_of_expenses = sum([i['price'] for i in expenses])
+    if sum_of_expenses < budget['budget']:
+        return Response({'message' : 'all good'},status = 200)
+    else:
+        return Response({'message' : 'you went over your budget btw'}, status=200)
+        
 
 @api_view(['POST'])
 def login(request):

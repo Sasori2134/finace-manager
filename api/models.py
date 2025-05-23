@@ -15,6 +15,10 @@ class Income(models.Model):
     user_id = models.ForeignKey(User,on_delete = models.CASCADE)
     income = models.PositiveIntegerField()
     date = models.DateField(default=timezone.now().date())
-
+    
+#shecvale es user_id rom iyos primary key momavalshi
+class Budget(models.Model):
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    budget = models.DecimalField(max_digits = 7, decimal_places=2)
 
     
