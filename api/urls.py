@@ -11,5 +11,6 @@ urlpatterns = [
     path('balance/<int:user_id>',views.balance,name = 'balance'),
     path('deletetransaction/<int:pk>',views.TransactiondataDeleteApiView.as_view(),name = 'deletetransaction'),
     path('register',views.register,name='register'),
-    path('login',views.login,name='login')
+    path('login',views.login,name='login'),
+    path('last30days/<int:user_id>',views.last_30_days,name = 'last30days')
 ]

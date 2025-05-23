@@ -36,7 +36,7 @@ def average_max(request, user_id):
 # aq ginda date-dan date-mde shecvale mere exla mushaobs ragac pontshi XD
 @api_view(['GET'])
 def filtering_expenses(request, user_id):
-    serializer = FilteredExpansesInputSerializer(data = request.data)
+    serializer = FilteredExpansesInputSerializer(data = request.query_params)
     if serializer.is_valid():
         if serializer.validated_data.get('date') is None and serializer.validated_data.get('category') is None:
             filtered = Transaction_data.objects.filter(user_id=user_id)
@@ -82,6 +82,13 @@ def balance(request,user_id):
     if income['income'] is not None and expenses['price'] is not None:
         balance = round(income['income'] - expenses['price'],2)
         return Response({'balance': balance})
+
+
+@api_view(['GET'])
+def last_30_days(request,user_id):
+    expenses = Transaction_data.objects.filter(user_id=user_id).values('price')[::-1][:30]
+    income = Income.objects.filter(user_id=user_id).values('income')[::-1][:30]
+    return Response({'expenses' : sum([i['price'] for i in expenses]), 'income' : sum([i['income'] for i in income])})
 
 
 @api_view(['POST'])
