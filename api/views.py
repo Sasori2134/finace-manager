@@ -69,7 +69,6 @@ class AddIncomeCreateApiView(generics.CreateAPIView):
         serializer.save()
 
 
-#rodesac ar aris income an expense sheyvanili abrunebs mesijs Balance not avaliable gaaswore ise rom tu ar aris sheyvanili mashin 0 iyos
 @api_view(['GET'])
 def balance(request, user_id):
     expenses = Transaction_data.objects.filter(user_id=user_id).aggregate(price = Sum('price'))
