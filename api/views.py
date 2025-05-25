@@ -93,6 +93,8 @@ def last_30_days(request, user_id):
         expenses = Transaction_data.objects.filter(user_id=user_id).values('date').annotate(dayly_sum = Sum('price')).order_by('date')[:30]
         income = Income.objects.filter(user_id=user_id).values('date').annotate(daily_income = Sum('income'))[:30]
         return Response({'expenses' : expenses,'income' : income})
+    else:
+        return Response({'message' : 'Wrong Option'}, status=409)
 
 
 class BudgetCreateApiView(generics.CreateAPIView):
