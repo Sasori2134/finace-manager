@@ -20,11 +20,17 @@ class TransactiondataDeleteApiView(generics.DestroyAPIView):
     queryset = Transaction_data.objects.all()
     serializer_class = ItemSerializer
         
-#GUI-s dros aq ginda dictionaris .get metodi .get('saxeli', 0)
+
 @api_view(['GET'])
 def average_max(request, user_id):
     spending_average_max = Transaction_data.objects.filter(user_id = user_id).aggregate(avg = Avg('price'), max = Max('price'))
     Income_average_max = Income.objects.filter(user_id=user_id).aggregate(avg = Avg('income'), max = Max('income'))
+    if spending_average_max['avg'] is None:
+        spending_average_max['avg'] = 0
+        spending_average_max['max'] = 0
+    if Income_average_max['avg'] is None:
+        Income_average_max['avg'] = 0
+        Income_average_max['max'] = 0
     spending_mean, spending_maximum, income_mean, income_max = round(spending_average_max['avg'],2), spending_average_max['max'], Income_average_max['avg'], Income_average_max['max']
     return Response({'spending_average': spending_mean,'spending_max' : spending_maximum, 'income_average' : income_mean, 'income_max' : income_max}, status=200)
 
