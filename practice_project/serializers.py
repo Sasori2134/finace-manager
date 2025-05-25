@@ -13,6 +13,11 @@ class ItemSerializer(serializers.ModelSerializer):
             'itemname',
             'price'
         ]
+    def validate_price(self, value):
+        if value <= 0:
+            raise ValueError("Item Price Can't be Less Than 0")
+        else:
+            return value
 
 class FilteredExpansesSerializer(serializers.ModelSerializer):
     class Meta:

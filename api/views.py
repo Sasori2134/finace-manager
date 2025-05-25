@@ -9,22 +9,17 @@ from django.contrib.auth.models import User, auth
 
 
 # Create your views here.
-# aq abrunebs datas rasac agzavnis user gadaakete create() momavalshi
 class TransactiondataCreateApiView(generics.CreateAPIView):
     queryset = Transaction_data.objects.all()
     serializer_class = ItemSerializer
     # authentication_classes = [authentication.SessionAuthentication]
     # permission_classes = [permissions.DjangoModelPermissions]
 
-    def perform_create(self, serializer):
-        serializer.save()
-
 
 class TransactiondataDeleteApiView(generics.DestroyAPIView):
     queryset = Transaction_data.objects.all()
     serializer_class = ItemSerializer
         
-
 
 @api_view(['GET'])
 def average_max(request, user_id):
@@ -60,7 +55,6 @@ def sum_of_expenses(request, user_id):
     return Response({'month' : grouped_by_month, 'day' : grouped_by_day, 'year' : grouped_by_year})
 
 
-# aq abrunebs datas rasac agzavnis user gadaakete create() momavalshi
 class AddIncomeCreateApiView(generics.CreateAPIView):
     queryset = Income.objects.all()
     serializer_class = IncomeSerializer
@@ -84,16 +78,21 @@ def balance(request, user_id):
 
 @api_view(['GET'])
 def last_30_days(request, user_id):
-    expenses = Transaction_data.objects.filter(user_id = user_id).values('price')[::-1][:30]
-    income = Income.objects.filter(user_id = user_id).values('income')[::-1][:30]
-    return Response({'expenses' : sum([i['price'] for i in expenses]), 'income' : sum([i['income'] for i in income])})
+    if request.query_params['how'] == 'sum':
+        expenses = Transaction_data.objects.filter(user_id = user_id).values('price')[:30]
+        income = Income.objects.filter(user_id = user_id).values('income')[:30]
+        return Response({'expenses' : sum([i['price'] for i in expenses]), 'income' : sum([i['income'] for i in income])})
+    elif request.query_params['how'] == 'list':
+        expenses = Transaction_data.objects.filter(user_id=user_id).values('date').annotate(dayly_sum = Sum('price')).order_by('date')[:30]
+        income = Income.objects.filter(user_id=user_id).values('date').annotate(daily_income = Sum('income'))[:30]
+        return Response({'expenses' : expenses,'income' : income})
 
 
 class BudgetCreateApiView(generics.CreateAPIView):
     queryset = Budget.objects.all()
     serializer_class = BudgetSerializer
 
-
+#shecvale Responsebi es raari
 @api_view(['GET'])
 def check_budget(request, user_id):
     expenses = Transaction_data.objects.filter(user_id = user_id).values('price')[::-1][:30]
