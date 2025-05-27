@@ -52,5 +52,23 @@ class BudgetSerializer(serializers.ModelSerializer):
         model = Budget
         fields = [
             'user_id',
-            'budget'
+            'budget',
+            'category',
+            'date'
+        ]
+    def validate_category(self, value):
+        user = self.initial_data['user_id']
+        if Budget.objects.filter(user_id=user, category=value).exists():
+            raise serializers.ValidationError('Category Already Exists')
+        else:
+            return value
+
+
+class SecondaryBudgetSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Budget
+        fields = [
+            'budget',
+            'category',
+            'date'
         ]

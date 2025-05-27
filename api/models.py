@@ -20,5 +20,6 @@ class Income(models.Model):
 class Budget(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     budget = models.DecimalField(max_digits = 7, decimal_places=2)
-
+    category = models.CharField(max_length=50)
+    date = models.DateField(default=timezone.now().date())
     

@@ -1,5 +1,5 @@
 from rest_framework.decorators import api_view
-from practice_project.serializers import ItemSerializer, IncomeSerializer, FilteredExpansesSerializer, FilteredExpansesInputSerializer, BudgetSerializer
+from practice_project.serializers import ItemSerializer, IncomeSerializer, FilteredExpansesSerializer, FilteredExpansesInputSerializer, BudgetSerializer, SecondaryBudgetSerializer
 from rest_framework.response import Response
 from .models import Transaction_data, Income, Budget
 from django.db.models import Avg, Max, Sum
@@ -101,11 +101,15 @@ class BudgetCreateApiView(generics.CreateAPIView):
     queryset = Budget.objects.all()
     serializer_class = BudgetSerializer
 
-#shecvale Responsebi es raari
+
+#shecvale Responsebi es raari da mtlianad shesacvlelia date unda amoigo budgetidan da mere __gt unda gamoiyeno ro ipovo imaze meti dgeebi da mere daloqo 30ze
+#unda gadaamowmo ramdenime budget anu ginda rom wamoiyo yvela budgeti romelic wesit gaketebulia
 @api_view(['GET'])
 def check_budget(request, user_id):
+    budget = Budget.objects.filter(user_id = user_id)
+    serialized = SecondaryBudgetSerializer(budget, many = True)
     expenses = Transaction_data.objects.filter(user_id = user_id).values('price')[::-1][:30]
-    budget = Budget.objects.filter(user_id = user_id).values('budget')[0]
+    return Response(serialized.data)
     sum_of_expenses = sum([i['price'] for i in expenses])
     if sum_of_expenses < budget['budget']:
         return Response({'message' : 'all good'},status = 200)
