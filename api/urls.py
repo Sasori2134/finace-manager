@@ -14,5 +14,5 @@ urlpatterns = [
     path('login',views.login,name ='login'),
     path('last_30_days/<int:user_id>',views.last_30_days,name = 'last_30_days'),
     path('add_budget',views.BudgetCreateApiView.as_view(),name = 'add_budget'),
-    path('check_budget/<int:user_id>',views.check_budget,name = 'check_budget')
+    path('get_budget/<int:user_id>',views.get_budget,name = 'check_budget')
 ]

@@ -46,6 +46,9 @@ def filtering_expenses(request, user_id):
         elif serializer.validated_data.get('date') is None:
             filtered = Transaction_data.objects.filter(user_id=user_id, category= serializer.validated_data.get('category'))
             serialized = FilteredExpansesSerializer(filtered,many=True)
+        elif serializer.validated_data.get('category') is None:
+            filtered = Transaction_data.objects.filter(user_id=user_id, date=serializer.validated_data.get('date'))
+            serialized = FilteredExpansesSerializer(filtered, many=True)
         else:
             filtered = Transaction_data.objects.filter(user_id=user_id, date=serializer.validated_data.get('date'), category=serializer.validated_data.get('category'))
             serialized = FilteredExpansesSerializer(filtered, many=True)
@@ -102,20 +105,19 @@ class BudgetCreateApiView(generics.CreateAPIView):
     serializer_class = BudgetSerializer
 
 
-#shecvale Responsebi es raari da mtlianad shesacvlelia date unda amoigo budgetidan da mere __gt unda gamoiyeno ro ipovo imaze meti dgeebi da mere daloqo 30ze
-#unda gadaamowmo ramdenime budget anu ginda rom wamoiyo yvela budgeti romelic wesit gaketebulia
 @api_view(['GET'])
-def check_budget(request, user_id):
-    budget = Budget.objects.filter(user_id = user_id)
-    serialized = SecondaryBudgetSerializer(budget, many = True)
-    expenses = Transaction_data.objects.filter(user_id = user_id).values('price')[::-1][:30]
-    return Response(serialized.data)
-    sum_of_expenses = sum([i['price'] for i in expenses])
-    if sum_of_expenses < budget['budget']:
-        return Response({'message' : 'all good'},status = 200)
-    else:
-        return Response({'message' : 'you went over your budget btw'}, status=200)
-        
+def get_budget(request, user_id):
+    budget = SecondaryBudgetSerializer(Budget.objects.filter(user_id = user_id), many = True)
+    for i in budget.data:
+        transactions = Transaction_data.objects.filter(user_id=user_id, date__gte=i['date'], category=i['category']).values('category').annotate(category_sum = Sum('price')).values('category_sum')
+        if transactions:
+            i['category_sum'] = transactions[0]['category_sum']
+            if transactions[0]['category_sum'] < float(i['budget']):
+                i['status'] = f'You Are Under Budget By {float(i['budget']) - float(transactions[0]['category_sum'])}'
+            else:
+                i['status'] = 'You Are Over Budget'
+    return Response(budget.data)
+
 
 @api_view(['POST'])
 def login(request):
