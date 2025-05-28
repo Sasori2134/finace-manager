@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from api.models import Transaction_data, Income, Budget
+from api.models import Transaction_data, Income, Budget, RecurringBills
 
 
 class ItemSerializer(serializers.ModelSerializer):
@@ -70,5 +70,15 @@ class SecondaryBudgetSerializer(serializers.ModelSerializer):
         fields = [
             'budget',
             'category',
+            'date'
+        ]
+
+class RecurringBillsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RecurringBills
+        fields = [
+            'user_id',
+            'category',
+            'amount',
             'date'
         ]

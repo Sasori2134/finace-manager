@@ -16,7 +16,7 @@ class Income(models.Model):
     income = models.PositiveIntegerField()
     date = models.DateField(default=timezone.now().date())
     
-#shecvale es user_id rom iyos primary key momavalshi
+
 class Budget(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
     budget = models.DecimalField(max_digits = 7, decimal_places=2)
@@ -24,5 +24,7 @@ class Budget(models.Model):
     date = models.DateField(default=timezone.now().date())
 
 class RecurringBills(models.Model):
-    pass
-    
+    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    category = models.CharField(max_length=50)
+    amount = models.DecimalField(max_digits=7, decimal_places=2)
+    date = models.DateField(default= timezone.now().date())

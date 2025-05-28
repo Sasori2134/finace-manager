@@ -1,7 +1,7 @@
 from rest_framework.decorators import api_view
-from practice_project.serializers import ItemSerializer, IncomeSerializer, FilteredExpansesSerializer, FilteredExpansesInputSerializer, BudgetSerializer, SecondaryBudgetSerializer
+from practice_project.serializers import ItemSerializer, IncomeSerializer, FilteredExpansesSerializer, FilteredExpansesInputSerializer, BudgetSerializer, SecondaryBudgetSerializer, RecurringBillsSerializer
 from rest_framework.response import Response
-from .models import Transaction_data, Income, Budget
+from .models import Transaction_data, Income, Budget, RecurringBills
 from django.db.models import Avg, Max, Sum
 from django.db.models.functions import TruncMonth,TruncYear
 from rest_framework import generics, permissions, authentication
@@ -64,13 +64,14 @@ def sum_of_expenses(request, user_id):
     grouped_by_year = filering.annotate(year = TruncYear('date')).values('year').annotate(yearly_sum = Sum('price')).order_by('year')
     return Response({'month' : grouped_by_month, 'day' : grouped_by_day, 'year' : grouped_by_year})
 
-
+#swirdeba Destroyapiview
 class AddIncomeCreateApiView(generics.CreateAPIView):
     queryset = Income.objects.all()
     serializer_class = IncomeSerializer
 
-    def perform_create(self, serializer):
-        serializer.save()
+class IncomeDestroyApiView(generics.DestroyAPIView):
+    queryset = Income.objects.all()
+    serializer_class = IncomeSerializer
 
 
 @api_view(['GET'])
@@ -99,8 +100,13 @@ def last_30_days(request, user_id):
     else:
         return Response({'message' : 'Wrong Option'}, status=409)
 
-
+#swirdeba Destroyapiview
 class BudgetCreateApiView(generics.CreateAPIView):
+    queryset = Budget.objects.all()
+    serializer_class = BudgetSerializer
+
+
+class BudgetDestroyApiView(generics.DestroyAPIView):
     queryset = Budget.objects.all()
     serializer_class = BudgetSerializer
 
@@ -117,6 +123,16 @@ def get_budget(request, user_id):
             else:
                 i['status'] = 'You Are Over Budget'
     return Response(budget.data)
+
+
+class RecurringBillsCreateApiView(generics.CreateAPIView):
+    queryset = RecurringBills.objects.all()
+    serializer_class = RecurringBillsSerializer
+
+
+class RecurringBillsDestroyApiView(generics.DestroyAPIView):
+    queryset = RecurringBills.objects.all()
+    serializer_class = RecurringBillsSerializer
 
 
 @api_view(['POST'])
