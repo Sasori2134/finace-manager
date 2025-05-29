@@ -50,6 +50,7 @@ class IncomeSerializer(serializers.ModelSerializer):
 class BudgetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Budget
+
         fields = [
             'user_id',
             'budget',
@@ -67,6 +68,7 @@ class BudgetSerializer(serializers.ModelSerializer):
 class SecondaryBudgetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Budget
+
         fields = [
             'budget',
             'category',
@@ -76,9 +78,17 @@ class SecondaryBudgetSerializer(serializers.ModelSerializer):
 class RecurringBillsSerializer(serializers.ModelSerializer):
     class Meta:
         model = RecurringBills
+
         fields = [
             'user_id',
             'category',
-            'amount',
+            'itemname',
+            'price',
             'date'
         ]
+    def validate_itemname(self, value):
+        user = self.initial_data['user_id']
+        if RecurringBills.objects.filter(user_id=user, itemname=value).exists():
+            raise serializers.ValidationError('You Can Only Have One Recurring Bill On One Category')
+        else:
+            return value

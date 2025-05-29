@@ -6,9 +6,26 @@ from django.db.models import Avg, Max, Sum
 from django.db.models.functions import TruncMonth,TruncYear
 from rest_framework import generics, permissions, authentication
 from django.contrib.auth.models import User, auth
+from django.utils import timezone
+from datetime import date
 
 
 # Create your views here.
+def recurring_bills_function(user_id):
+        recurring_bills = RecurringBillsSerializer(RecurringBills.objects.filter(user_id=user_id), many=True)
+        for i in recurring_bills.data:
+            transaction_data = ItemSerializer(Transaction_data.objects.filter(user_id=user_id, category='recurring_bill',itemname=i['itemname']).order_by('-date'), many = True)
+            if transaction_data.data:
+                if i['date'] == timezone.now().date().day and transaction_data.data[0]['date'] != str(timezone.now().date()):
+                    i['date'] = timezone.now().date()
+                    serialized_data = ItemSerializer(data = i)
+                    if serialized_data.is_valid():
+                        serialized_data.save()
+            else:
+                i['date'] = timezone.now().date()
+                serialized_data = ItemSerializer(data = i)
+                if serialized_data.is_valid():
+                    serialized_data.save()
 class TransactiondataCreateApiView(generics.CreateAPIView):
     queryset = Transaction_data.objects.all()
     serializer_class = ItemSerializer
@@ -52,6 +69,8 @@ def filtering_expenses(request, user_id):
         else:
             filtered = Transaction_data.objects.filter(user_id=user_id, date=serializer.validated_data.get('date'), category=serializer.validated_data.get('category'))
             serialized = FilteredExpansesSerializer(filtered, many=True)
+        #recurring bills
+        recurring_bills_function(user_id)
         return Response(serialized.data)
     return Response({'message':'Invalid Input'}, status = 409)
 
@@ -100,7 +119,7 @@ def last_30_days(request, user_id):
     else:
         return Response({'message' : 'Wrong Option'}, status=409)
 
-#swirdeba Destroyapiview
+
 class BudgetCreateApiView(generics.CreateAPIView):
     queryset = Budget.objects.all()
     serializer_class = BudgetSerializer
