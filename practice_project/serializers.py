@@ -86,9 +86,9 @@ class RecurringBillsSerializer(serializers.ModelSerializer):
             'price',
             'date'
         ]
-    def validate_itemname(self, value):
+    def validate_category(self, value):
         user = self.initial_data['user_id']
-        if RecurringBills.objects.filter(user_id=user, itemname=value).exists():
+        if RecurringBills.objects.filter(user_id=user, category=value).exists():
             raise serializers.ValidationError('You Can Only Have One Recurring Bill On One Category')
         else:
             return value

@@ -14,7 +14,7 @@ from datetime import datetime
 def recurring_bills_function(user_id):
         recurring_bills = RecurringBillsSerializer(RecurringBills.objects.filter(user_id=user_id), many=True)
         for i in recurring_bills.data:
-            transaction_data = ItemSerializer(Transaction_data.objects.filter(user_id=user_id, category='recurring_bill',itemname=i['itemname']).order_by('-date'), many = True)
+            transaction_data = ItemSerializer(Transaction_data.objects.filter(user_id=user_id, category=i['category'],itemname='recurring_bill').order_by('-date'), many = True)
             if transaction_data.data:
                 date = datetime.strptime(transaction_data.data[0]['date'],'%Y-%m-%d').strftime('%Y-%m')
                 if timezone.now().date().day >= i['date'] and date != timezone.now().date().strftime('%Y-%m'):
