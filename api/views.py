@@ -7,7 +7,7 @@ from django.db.models.functions import TruncMonth,TruncYear
 from rest_framework import generics, permissions, authentication
 from django.contrib.auth.models import User, auth
 from django.utils import timezone
-from datetime import date
+from datetime import datetime
 
 
 # Create your views here.
@@ -16,16 +16,20 @@ def recurring_bills_function(user_id):
         for i in recurring_bills.data:
             transaction_data = ItemSerializer(Transaction_data.objects.filter(user_id=user_id, category='recurring_bill',itemname=i['itemname']).order_by('-date'), many = True)
             if transaction_data.data:
-                if i['date'] == timezone.now().date().day and transaction_data.data[0]['date'] != str(timezone.now().date()):
+                date = datetime.strptime(transaction_data.data[0]['date'],'%Y-%m-%d').strftime('%Y-%m')
+                if timezone.now().date().day >= i['date'] and date != timezone.now().date().strftime('%Y-%m'):
                     i['date'] = timezone.now().date()
                     serialized_data = ItemSerializer(data = i)
                     if serialized_data.is_valid():
                         serialized_data.save()
             else:
-                i['date'] = timezone.now().date()
-                serialized_data = ItemSerializer(data = i)
-                if serialized_data.is_valid():
-                    serialized_data.save()
+                if timezone.now().date().day >= i['date']:
+                    i['date'] = timezone.now().date()
+                    serialized_data = ItemSerializer(data = i)
+                    if serialized_data.is_valid():
+                        serialized_data.save()
+
+                    
 class TransactiondataCreateApiView(generics.CreateAPIView):
     queryset = Transaction_data.objects.all()
     serializer_class = ItemSerializer
@@ -58,16 +62,16 @@ def filtering_expenses(request, user_id):
     serializer = FilteredExpansesInputSerializer(data = request.query_params)
     if serializer.is_valid():
         if serializer.validated_data.get('date') is None and serializer.validated_data.get('category') is None:
-            filtered = Transaction_data.objects.filter(user_id=user_id)
+            filtered = Transaction_data.objects.filter(user_id=user_id).order_by('-date')
             serialized = FilteredExpansesSerializer(filtered,many=True)
         elif serializer.validated_data.get('date') is None:
-            filtered = Transaction_data.objects.filter(user_id=user_id, category= serializer.validated_data.get('category'))
+            filtered = Transaction_data.objects.filter(user_id=user_id, category= serializer.validated_data.get('category')).order_by('-date')
             serialized = FilteredExpansesSerializer(filtered,many=True)
         elif serializer.validated_data.get('category') is None:
-            filtered = Transaction_data.objects.filter(user_id=user_id, date=serializer.validated_data.get('date'))
+            filtered = Transaction_data.objects.filter(user_id=user_id, date=serializer.validated_data.get('date')).order_by('-date')
             serialized = FilteredExpansesSerializer(filtered, many=True)
         else:
-            filtered = Transaction_data.objects.filter(user_id=user_id, date=serializer.validated_data.get('date'), category=serializer.validated_data.get('category'))
+            filtered = Transaction_data.objects.filter(user_id=user_id, date=serializer.validated_data.get('date'), category=serializer.validated_data.get('category')).order_by('-date')
             serialized = FilteredExpansesSerializer(filtered, many=True)
         #recurring bills
         recurring_bills_function(user_id)
