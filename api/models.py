@@ -7,8 +7,8 @@ from django.contrib.auth.models import User
 class Transaction_data(models.Model):
     user_id = models.ForeignKey(User,on_delete = models.CASCADE)
     date = models.DateField(default = timezone.now().date())
-    category = models.CharField(max_length = 100, default='unknown')
-    itemname = models.CharField(max_length = 200, default='unknown')
+    category = models.CharField(max_length = 100, blank=True)
+    itemname = models.CharField(max_length = 200, blank=True)
     price = models.DecimalField(max_digits = 7,decimal_places=2)
 
 class Income(models.Model):
@@ -19,13 +19,13 @@ class Income(models.Model):
 
 class Budget(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
-    budget = models.DecimalField(max_digits = 7, decimal_places=2)
-    category = models.CharField(max_length=50, default='unknown')
+    budget = models.DecimalField(max_digits = 7, decimal_places=2, blank=True)
+    category = models.CharField(max_length=50, blank=True)
     date = models.DateField(default=timezone.now().date())
 
 class RecurringBills(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE)
-    category = models.CharField(max_length=50, default='unknown')
+    category = models.CharField(max_length=50, blank=True)
     price = models.DecimalField(max_digits=7, decimal_places=2)
     date = models.PositiveIntegerField(default= timezone.now().date().day)
-    itemname = models.CharField(max_length = 50, default='recurring_bill')
+    itemname = models.CharField(default='recurring_bill')

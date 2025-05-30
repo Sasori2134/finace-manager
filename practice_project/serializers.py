@@ -13,11 +13,19 @@ class ItemSerializer(serializers.ModelSerializer):
             'itemname',
             'price'
         ]
-    def validate_price(self, value):
-        if value <= 0:
-            raise ValueError("Item Price Can't be Less Than 0")
+        
+    def validate(self, data):
+        if data['price'] <= 0:
+            raise serializers.ValidationError("Item Price Can't be Less Than 0")
+        if not data['category']:
+            data['category'] = 'unknown'
+        if not data['itemname']:
+            data['itemname'] = 'unknown'
+        if not data['price']:
+            raise Serializers.ValidationError('You Have To Include Price')
         else:
-            return value
+            return data
+        
 
 class FilteredExpansesSerializer(serializers.ModelSerializer):
     class Meta:
@@ -42,6 +50,7 @@ class IncomeSerializer(serializers.ModelSerializer):
         model = Income
 
         fields = [
+            'pk',
             'user_id',
             'income',
             'date'
@@ -57,19 +66,23 @@ class BudgetSerializer(serializers.ModelSerializer):
             'category',
             'date'
         ]
-    def validate_category(self, value):
+
+    def validate(self, data):
         user = self.initial_data['user_id']
-        if Budget.objects.filter(user_id=user, category=value).exists():
+        if Budget.objects.filter(user_id=user, category=data['category']).exists():
             raise serializers.ValidationError('Category Already Exists')
+        if not data['budget']:
+            raise serializers.ValidationError('You Have To Include Budget')
+        if not data['category']:
+            raise serializers.ValidationError('You Have To Include Category')
         else:
-            return value
-
-
+            return data
 class SecondaryBudgetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Budget
 
         fields = [
+            'pk',
             'budget',
             'category',
             'date'
@@ -80,6 +93,7 @@ class RecurringBillsSerializer(serializers.ModelSerializer):
         model = RecurringBills
 
         fields = [
+            'pk',
             'user_id',
             'category',
             'itemname',

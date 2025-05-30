@@ -87,7 +87,7 @@ def sum_of_expenses(request, user_id):
     grouped_by_year = filering.annotate(year = TruncYear('date')).values('year').annotate(yearly_sum = Sum('price')).order_by('year')
     return Response({'month' : grouped_by_month, 'day' : grouped_by_day, 'year' : grouped_by_year})
 
-#swirdeba Destroyapiview
+#swirdeba gadacema listis am incomebis
 class AddIncomeCreateApiView(generics.CreateAPIView):
     queryset = Income.objects.all()
     serializer_class = IncomeSerializer
@@ -145,6 +145,9 @@ def get_budget(request, user_id):
                 i['status'] = f'You Are Under Budget By {float(i['budget']) - float(transactions[0]['category_sum'])}'
             else:
                 i['status'] = 'You Are Over Budget'
+        else:
+            i['category_sum'] = 0
+            i['status'] = 'You Are Under Budget'
     return Response(budget.data)
 
 
