@@ -105,23 +105,15 @@ def balance(request, user_id):
         expenses['price'] = 0
     if income['income'] is None:
         income['income'] = 0
-    if income['income'] is not None and expenses['price'] is not None:
-        balance = round(income['income'] - expenses['price'],2)
-        return Response({'balance': balance})
+    balance = round(income['income'] - expenses['price'],2)
+    return Response({'balance': balance})
 
 
 @api_view(['GET'])
-def last_30_days(request, user_id):
-    if request.query_params['how'] == 'sum':
+def this_month_sum(request, user_id):
         expenses = Transaction_data.objects.filter(user_id = user_id).values('price')[:30]
         income = Income.objects.filter(user_id = user_id).values('income')[:30]
         return Response({'expenses' : sum([i['price'] for i in expenses]), 'income' : sum([i['income'] for i in income])})
-    elif request.query_params['how'] == 'list':
-        expenses = Transaction_data.objects.filter(user_id=user_id).values('date').annotate(dayly_sum = Sum('price')).order_by('date')[:30]
-        income = Income.objects.filter(user_id=user_id).values('date').annotate(daily_income = Sum('income'))[:30]
-        return Response({'expenses' : expenses,'income' : income})
-    else:
-        return Response({'message' : 'Wrong Option'}, status=409)
 
 
 class BudgetCreateApiView(generics.CreateAPIView):
