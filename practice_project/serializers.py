@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from api.models import Transaction_data, Income, Budget, RecurringBills
+from api.models import Transaction_data, Budget, RecurringBills
 from .functions import check_float
 
 
@@ -12,7 +12,8 @@ class ItemSerializer(serializers.ModelSerializer):
             'date',
             'category',
             'itemname',
-            'price'
+            'price',
+            'transaction_type'
         ]
         
     def validate(self, data):
@@ -46,6 +47,7 @@ class FilteredExpansesSerializer(serializers.ModelSerializer):
             'price',
             'date',
             'category',
+            'transaction_type'
         ]
 
 
@@ -54,40 +56,27 @@ class FilteredExpansesInputSerializer(serializers.Serializer):
     category = serializers.CharField(required=False, allow_null=True)
 
 
-class IncomeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Income
-
-        fields = [
-            'pk',
-            'user_id',
-            'income',
-            'date'
-        ]
-
-
 class BudgetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Budget
 
         fields = [
-            'user_id',
             'budget',
             'category',
             'date'
         ]
 
     def validate(self, data):
-        user = self.initial_data['user_id']
+        user = self.context['request'].user
         if Budget.objects.filter(user_id=user, category=data['category']).exists():
             raise serializers.ValidationError('Category Already Exists')
-        if not data['budget']:
+        if not data.get('budget'):
             raise serializers.ValidationError('You Have To Include Budget')
-        if not data['category'] or data['category'].isdigit() or check_float(data['category']):
+        if not data.get('category') or data.get('category').isdigit() or check_float(data.get('category')):
             raise serializers.ValidationError('You Have To Include Category')
-        else:
-            data['category'] = data['category'].strip().lower()
         return data
+    def create(self, validated_data):
+        return Budget.objects.create(user_id=self.context['request'].user, **validated_data)
 
 
 class SecondaryBudgetSerializer(serializers.ModelSerializer):
