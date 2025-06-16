@@ -3,7 +3,7 @@ from practice_project.serializers import ItemSerializer, FilteredExpansesSeriali
 from rest_framework.response import Response
 from .models import Transaction_data, Budget, RecurringBills
 from django.db.models import Avg, Max, Sum
-from django.db.models.functions import TruncMonth,TruncYear, ExtractYear, ExtractMonth, ExtractDay
+from django.db.models.functions import TruncMonth,TruncYear, TruncDay, ExtractYear, ExtractMonth, ExtractDay
 from rest_framework import generics, permissions, authentication
 from django.contrib.auth.models import User, auth
 from django.utils import timezone
@@ -135,11 +135,19 @@ def sum_of_transactions(request):
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
+#ginda rom tvit da dgit wamoigos da ara uazro dgeebit
 def sum_of_transactions_analytics(request):
     day = int(request.query_params.get('days', 30))
-    grouped_by_day_expense = Transaction_data.objects.annotate(year = ExtractYear('date'), day = ExtractDay('date')).filter(user_id=request.user, transaction_type='expense',year = timezone.now().year, date__gt = timezone.now().date() - timedelta(days=day)).values('day').annotate(daily_sum = Sum('price')).order_by('day')
-    grouped_by_day_income = Transaction_data.objects.annotate(year = ExtractYear('date'), day = ExtractDay('date')).filter(user_id=request.user, transaction_type='income',year = timezone.now().year, date__gt = timezone.now().date() - timedelta(days=day)).values('day').annotate(daily_sum = Sum('price')).order_by('day')
-    return Response({'daily_expense' : grouped_by_day_expense,'daily_income' : grouped_by_day_income})
+    grouped_by_day_expense = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, transaction_type='expense',year = timezone.now().year, date__range = (timezone.now().date() - timedelta(days=day-1),timezone.now().date())).values('date').annotate(daily_sum = Sum('price')).order_by('date')
+    grouped_by_day_income = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, transaction_type='income',year = timezone.now().year, date__range = (timezone.now().date() - timedelta(days=day-1),timezone.now().date())).values('date').annotate(daily_sum = Sum('price')).order_by('date')
+    start_date = datetime.now().date() - timedelta(days=day)
+    expense_dates = {((start_date + timedelta(days=i)).strftime('%b-%d')) : 0 for i in range(1,day+1)}
+    income_dates = expense_dates.copy()
+    for i in grouped_by_day_expense:
+        expense_dates[i['date'].strftime('%b-%d')] = i['daily_sum']
+    for i in grouped_by_day_income:
+        income_dates[i['date'].strftime('%b-%d')] = i['daily_sum']
+    return Response({'daily_expense' : expense_dates,'daily_income' : income_dates})
 
 
 def total_balance_income_expenses(request):
