@@ -17,11 +17,8 @@ class ItemSerializer(serializers.ModelSerializer):
         ]
         
     def validate(self, data):
-        # if data['price'] is not None and data['price'] != '':
         if data['price'] <= 0:
             raise serializers.ValidationError("Item Price Has To Be More Than 0")
-        # else:
-        #     raise serializers.ValidationError("You Have To Include A Price")
         if data['category'].isdigit() or check_float(data['category']):
             raise serializers.ValidationError("Category Can't Be A Number")
         else:
@@ -52,8 +49,10 @@ class FilteredExpansesSerializer(serializers.ModelSerializer):
 
 
 class FilteredExpansesInputSerializer(serializers.Serializer):
-    date = serializers.DateField(required=False, allow_null=True)
-    category = serializers.CharField(required=False, allow_null=True)
+    from_date = serializers.DateField(required=False, allow_null=True)
+    to_date = serializers.DateField(required=False, allow_null=True)
+    category = serializers.CharField(max_length=50,required=False, allow_null=True)
+    transaction_type = serializers.CharField(max_length=7, required=False, allow_null=True)
 
 
 class BudgetSerializer(serializers.ModelSerializer):
@@ -75,6 +74,8 @@ class BudgetSerializer(serializers.ModelSerializer):
         if not data.get('category') or data.get('category').isdigit() or check_float(data.get('category')):
             raise serializers.ValidationError('You Have To Include Category')
         return data
+
+
     def create(self, validated_data):
         return Budget.objects.create(user_id=self.context['request'].user, **validated_data)
 
@@ -101,13 +102,14 @@ class RecurringBillsSerializer(serializers.ModelSerializer):
             'category',
             'itemname',
             'price',
-            'date'
+            'date',
+            'transaction_type'
         ]
 
     def validate(self, data):
         if data['category']:
             data['category'] = data['category'].strip().lower()
-            user = self.initial_data['user_id']
+            user = self.context['request'].user
             if RecurringBills.objects.filter(user_id=user, category= data['category']).exists():
                 raise serializers.ValidationError('You Can Only Have One Recurring Bill On One Category')
             elif data['category'].isdigit() or check_float(data['category']):
