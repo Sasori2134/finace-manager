@@ -1,5 +1,5 @@
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from practice_project.serializers import ItemSerializer, FilteredExpansesSerializer, FilteredExpansesInputSerializer, BudgetSerializer, SecondaryBudgetSerializer, RecurringBillsSerializer
+from practice_project.serializers import ItemSerializer, FilteredExpansesSerializer, FilteredExpansesInputSerializer, BudgetSerializer, SecondaryBudgetSerializer, RecurringBillsSerializer, RegisterInputSerializer
 from rest_framework.response import Response
 from .models import Transaction_data, Budget, RecurringBills
 from django.db.models import Avg, Max, Sum
@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.db.utils import IntegrityError
 
 
 # Create your views here.
@@ -23,13 +24,13 @@ def recurring_bills_function(user):
             date = datetime.strptime(transaction_data.data[0]['date'],'%Y-%m-%d').strftime('%Y-%m')
             if timezone.now().date().day >= i['date'] and date != timezone.now().date().strftime('%Y-%m'):
                 i['date'] = timezone.now().date()
-                serialized_data = ItemSerializer(data = i)
+                serialized_data = ItemSerializer(data = i, context = {'user' : user})
                 if serialized_data.is_valid():
                     serialized_data.save()
         else:
             if timezone.now().date().day >= i['date']:
                 i['date'] = timezone.now().date()
-                serialized_data = ItemSerializer(data = i)
+                serialized_data = ItemSerializer(data = i, context = {'user' : user})
                 if serialized_data.is_valid():
                     serialized_data.save()
 
@@ -48,6 +49,19 @@ def dashboard(request):
         })
 
 
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def analytics_page(request):
+    try:
+        return Response({
+        'stats' : average_total_income_expenses_analytics(request),
+        'piechart' : data_for_piechart_analytics(request),
+        'chart' : sum_of_transactions_analytics(request)
+        })
+    except ValueError:
+        return Response({'message' : 'Days Have To Be A Number'})
+
 class TransactiondataCreateApiView(generics.CreateAPIView):
     queryset = Transaction_data.objects.all()
     serializer_class = ItemSerializer
@@ -55,7 +69,7 @@ class TransactiondataCreateApiView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
 
 
-class TransactiondataDeleteApiView(generics.DestroyAPIView):
+class TransactiondataDestroyApiView(generics.DestroyAPIView):
     queryset = Transaction_data.objects.all()
     serializer_class = ItemSerializer
     authentication_classes = [JWTAuthentication]
@@ -108,12 +122,12 @@ def filtering_expenses(request):
     if serializer.is_valid():
         fields_dictionary = {}
         if serializer.data.get('from_date'):
-            fields_dictionary['date__gte'] = serializer.data.get('from_date')
+            fields_dictionary['date__gte'] = serializer.data.get('from_date').strip()
         if serializer.data.get('to_date'):
-            fields_dictionary['date__lte'] = serializer.data.get('from_date')
+            fields_dictionary['date__lte'] = serializer.data.get('to_date').strip()
         if serializer.data.get('category'):
-            fields_dictionary['category'] = serializer.data.get('category')
-        if serializer.data.get('transaction_type'):
+            fields_dictionary['category'] = serializer.data.get('category').strip().lower()
+        if serializer.data.get('transaction_type').strip().lower():
             fields_dictionary['transaction_type'] = serializer.data.get('transaction_type')
         serialized_data = ItemSerializer(Transaction_data.objects.filter(user_id=request.user, **fields_dictionary).order_by('-date'), many = True)
         return Response(serialized_data.data, status = 200)
@@ -132,22 +146,18 @@ def sum_of_transactions(request):
     return {'monthly_expense' : months_expenses,'monthly_income' : months_income}
 
 
-@api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
-#ginda rom tvit da dgit wamoigos da ara uazro dgeebit
 def sum_of_transactions_analytics(request):
-    day = int(request.query_params.get('days', 30))
-    grouped_by_day_expense = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, transaction_type='expense',year = timezone.now().year, date__range = (timezone.now().date() - timedelta(days=day-1),timezone.now().date())).values('date').annotate(daily_sum = Sum('price')).order_by('date')
-    grouped_by_day_income = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, transaction_type='income',year = timezone.now().year, date__range = (timezone.now().date() - timedelta(days=day-1),timezone.now().date())).values('date').annotate(daily_sum = Sum('price')).order_by('date')
-    start_date = datetime.now().date() - timedelta(days=day)
-    expense_dates = {((start_date + timedelta(days=i)).strftime('%b-%d')) : 0 for i in range(1,day+1)}
+    days = int(request.query_params.get('days', 30))
+    grouped_by_day_expense = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, transaction_type='expense',year = timezone.now().year, date__range = (timezone.now().date() - timedelta(days=days-1),timezone.now().date())).values('date').annotate(daily_sum = Sum('price')).order_by('date')
+    grouped_by_day_income = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, transaction_type='income',year = timezone.now().year, date__range = (timezone.now().date() - timedelta(days=days-1),timezone.now().date())).values('date').annotate(daily_sum = Sum('price')).order_by('date')
+    start_date = datetime.now().date() - timedelta(days=days)
+    expense_dates = {((start_date + timedelta(days=i)).strftime('%b-%d')) : 0 for i in range(1,days+1)}
     income_dates = expense_dates.copy()
     for i in grouped_by_day_expense:
         expense_dates[i['date'].strftime('%b-%d')] = i['daily_sum']
     for i in grouped_by_day_income:
         income_dates[i['date'].strftime('%b-%d')] = i['daily_sum']
-    return Response({'daily_expense' : expense_dates,'daily_income' : income_dates})
+    return {'daily_expense' : expense_dates,'daily_income' : income_dates}
 
 
 def total_balance_income_expenses(request):
@@ -185,25 +195,19 @@ def get_budget(request):
     return Response(budget.data)
 
 
-@api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
 def average_total_income_expenses_analytics(request):
-    from_date = int(request.query_params.get('days',30))
-    income_average = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = from_date), transaction_type='income').aggregate(income_average = Avg('price'))['income_average']
-    expense_average = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = from_date), transaction_type='expense').aggregate(expense_average = Avg('price'))['expense_average']
-    total_income = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = from_date), transaction_type='income').aggregate(total_income= Sum('price'))['total_income']
-    total_expense = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = from_date), transaction_type='expense').aggregate(total_expense = Sum('price'))['total_expense']
-    return Response({'income_average': income_average, 'expense_average' : expense_average, 'total_income' : total_income, 'total_expense' : total_expense})
+    days = int(request.query_params.get('days',30))
+    income_average = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='income').aggregate(income_average = Avg('price'))['income_average']
+    expense_average = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='expense').aggregate(expense_average = Avg('price'))['expense_average']
+    total_income = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='income').aggregate(total_income= Sum('price'))['total_income']
+    total_expense = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='expense').aggregate(total_expense = Sum('price'))['total_expense']
+    return {'income_average': income_average, 'expense_average' : expense_average, 'total_income' : total_income, 'total_expense' : total_expense}
 
 
-@api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
 def data_for_piechart_analytics(request):
-    from_date = int(request.query_params.get('days', 30))
-    grouped_by_category = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days=from_date), transaction_type='expense').values('category').annotate(stats = Sum('price'))
-    return Response(grouped_by_category)
+    days = int(request.query_params.get('days', 30))
+    grouped_by_category = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days=days), transaction_type='expense').values('category').annotate(stats = Sum('price'))
+    return grouped_by_category
 
 
 def data_for_piechart_total(request):
@@ -223,8 +227,13 @@ def log_out(request):
 
 @api_view(['POST'])
 def register(request):
-    try:
-        user = User.objects.create_user(username = request.data['username'], password = request.data['password'])
-        return Response(status = 201)
-    except:
-        return Response({'message' : 'Username Is Already In Use'}, status = 409)
+    serialized_register = RegisterInputSerializer(data = request.data)
+    if serialized_register.is_valid():
+        try:
+            user = User.objects.create_user(username = serialized_register.data['username'], password = serialized_register.data['password'])
+            return Response(status = 201)
+        except IntegrityError:
+            return Response({'message' : 'Username Is Already In Use'}, status = 409)
+        except ValueError:
+            return Response({'message' : 'Username Is Missing'}, status = 409)
+    return Response(serialized_register.errors)

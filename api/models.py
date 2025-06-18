@@ -23,7 +23,7 @@ class Budget(models.Model):
 class RecurringBills(models.Model):
     user_id = models.ForeignKey(User, on_delete=models.CASCADE, blank=True)
     category = models.CharField(max_length=50, blank=True)
-    price = models.DecimalField(max_digits=7, decimal_places=2)
+    price = models.DecimalField(max_digits=7, decimal_places=2, blank=True)
     date = models.PositiveIntegerField()
     itemname = models.CharField(max_length=14,default='recurring_bill')
     transaction_type = models.CharField(max_length=7,default='expense')
