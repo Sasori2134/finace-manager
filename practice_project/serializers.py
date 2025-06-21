@@ -4,10 +4,11 @@ from .functions import check_float
 from rest_framework import validators
 from django.contrib.auth.models import User
 from .functions import check_float, validation_dictionary
+from decimal import Decimal
 
 
 class ItemSerializer(serializers.ModelSerializer):
-    price = serializers.DecimalField(max_digits = 7, min_value=0.01, decimal_places=2, error_messages=validation_dictionary("DecimalField", 'price'))
+    price = serializers.DecimalField(max_digits = 7, min_value=Decimal('0.01'), decimal_places=2, error_messages=validation_dictionary("DecimalField", 'price'))
     category = serializers.CharField(max_length = 50, min_length=1, error_messages=validation_dictionary("CharField", "category"))
     itemname = serializers.CharField(max_length = 200, min_length=1, error_messages=validation_dictionary("CharField", "item name"))
     transaction_type = serializers.CharField(max_length=8, min_length=6, error_messages=validation_dictionary("CharField", "transaction_type"))
@@ -32,7 +33,7 @@ class ItemSerializer(serializers.ModelSerializer):
         return data
         
     def create(self, validated_data):
-        return Transaction_data.objects.create(user_id=self.context['user'], **validated_data)
+        return Transaction_data.objects.create(user_id=self.context['request'].user, **validated_data)
         
         
 
@@ -58,7 +59,7 @@ class FilteredExpansesInputSerializer(serializers.Serializer):
 
 
 class BudgetSerializer(serializers.ModelSerializer):
-    budget = serializers.DecimalField(max_digits = 7, decimal_places=2, min_value=0.01, error_messages=validation_dictionary("DecimalField",'Budget'))
+    budget = serializers.DecimalField(max_digits = 7, decimal_places=2, min_value=Decimal('0.01'), error_messages=validation_dictionary("DecimalField",'Budget'))
     category = serializers.CharField(max_length=50, min_length=1,error_messages=validation_dictionary("CharField", "Category"))
 
     class Meta:
@@ -89,7 +90,7 @@ class BudgetSerializer(serializers.ModelSerializer):
 class RecurringBillsSerializer(serializers.ModelSerializer):
     category = serializers.CharField(max_length=50, min_length=1, error_messages=validation_dictionary("CharField", "Category"))
 
-    price = serializers.DecimalField(max_digits=7, decimal_places=2, min_value=0.01, error_messages=validation_dictionary("DecimalField", "Price"))
+    price = serializers.DecimalField(max_digits=7, decimal_places=2, min_value=Decimal('0.01'), error_messages=validation_dictionary("DecimalField", "Price"))
 
     date = serializers.IntegerField(min_value=1, max_value=31,error_messages={
         'invalid' : 'You Have To Include Valid Day',

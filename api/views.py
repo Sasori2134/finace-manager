@@ -12,6 +12,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.utils import IntegrityError
+from .dashboard_views import monthly_average, sum_of_transactions, total_balance_income_expenses, recent_transactions, data_for_piechart_total
+from .analytics_views import sum_of_transactions_analytics, average_total_income_expenses_analytics, data_for_piechart_analytics
 
 
 # Create your views here.
@@ -118,17 +120,6 @@ class BudgetDestroyApiView(generics.DestroyAPIView):
     serializer_class = BudgetSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
-        
-
-def monthly_average(request):
-    expense_average = Transaction_data.objects.annotate(month = TruncMonth('date')).filter(user_id = request.user, transaction_type='expense').values('month').annotate(monthly_total = Sum('price')).aggregate(avg = Avg('monthly_total'))
-    Income_average = Transaction_data.objects.annotate(month = TruncMonth('date')).filter(user_id = request.user, transaction_type='income').values('month').annotate(monthly_total = Sum('price')).aggregate(avg = Avg('monthly_total'))
-    if expense_average['avg'] is None:
-        expense_average['avg'] = 0
-    if Income_average['avg'] is None:
-        Income_average['avg'] = 0
-    expense_mean, income_mean = round(expense_average['avg'],2),round(Income_average['avg'],2)
-    return {'expense_average': expense_mean, 'income_average' : income_mean}
 
 
 @api_view(['GET'])
@@ -144,53 +135,11 @@ def filtering_expenses(request):
             fields_dictionary['date__lte'] = serializer.data.get('to_date').strip()
         if serializer.data.get('category'):
             fields_dictionary['category'] = serializer.data.get('category').strip().lower()
-        if serializer.data.get('transaction_type').strip().lower():
-            fields_dictionary['transaction_type'] = serializer.data.get('transaction_type')
+        if serializer.data.get('transaction_type'):
+            fields_dictionary['transaction_type'] = serializer.data.get('transaction_type').strip().lower()
         serialized_data = ItemSerializer(Transaction_data.objects.filter(user_id=request.user, **fields_dictionary).order_by('-date'), many = True)
         return Response(serialized_data.data, status = 200)
     return Response({'message':'Invalid Input'}, status = 409)
-
-
-def sum_of_transactions(request):
-    grouped_by_month_expense = Transaction_data.objects.annotate(year = ExtractYear('date'),month = ExtractMonth('date')).filter(user_id=request.user, transaction_type='expense',year = timezone.now().year).values('month').annotate(monthly_sum = Sum('price')).order_by('month')
-    grouped_by_month_income = Transaction_data.objects.annotate(year = ExtractYear('date'), month = ExtractMonth('date')).filter(user_id=request.user, transaction_type='income',year = timezone.now().year).values('month').annotate(monthly_sum = Sum('price')).order_by('month')
-    months_expenses = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0}
-    months_income = months_expenses.copy()
-    for i in grouped_by_month_income:
-        months_income[i['month']] = i['monthly_sum']
-    for i in grouped_by_month_expense:
-        months_expenses[i['month']] = i['monthly_sum']
-    return {'monthly_expense' : months_expenses,'monthly_income' : months_income}
-
-
-def sum_of_transactions_analytics(request):
-    days = int(request.query_params.get('days', 30))
-    grouped_by_day_expense = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, transaction_type='expense',year = timezone.now().year, date__range = (timezone.now().date() - timedelta(days=days-1),timezone.now().date())).values('date').annotate(daily_sum = Sum('price')).order_by('date')
-    grouped_by_day_income = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, transaction_type='income',year = timezone.now().year, date__range = (timezone.now().date() - timedelta(days=days-1),timezone.now().date())).values('date').annotate(daily_sum = Sum('price')).order_by('date')
-    start_date = datetime.now().date() - timedelta(days=days)
-    expense_dates = {((start_date + timedelta(days=i)).strftime('%b-%d')) : 0 for i in range(1,days+1)}
-    income_dates = expense_dates.copy()
-    for i in grouped_by_day_expense:
-        expense_dates[i['date'].strftime('%b-%d')] = i['daily_sum']
-    for i in grouped_by_day_income:
-        income_dates[i['date'].strftime('%b-%d')] = i['daily_sum']
-    return {'daily_expense' : expense_dates,'daily_income' : income_dates}
-
-
-def total_balance_income_expenses(request):
-    expenses = Transaction_data.objects.filter(user_id=request.user, transaction_type='expense').aggregate(price = Sum('price'))
-    income = Transaction_data.objects.filter(user_id=request.user, transaction_type='income').aggregate(income = Sum('price'))
-    if expenses['price'] is None:
-        expenses['price'] = 0
-    if income['income'] is None:
-        income['income'] = 0
-    balance = round(income['income'] - expenses['price'],2)
-    return {'balance': balance, 'total_income' : income['income'], 'total_expense' : expenses['price']}
-
-
-def recent_transactions(request):
-    transactions = ItemSerializer(Transaction_data.objects.filter(user_id=request.user).order_by('-date')[:5], many=True)
-    return transactions.data
 
 
 @api_view(['GET'])
@@ -210,26 +159,6 @@ def get_budget(request):
             i['category_sum'] = 0
             i['status'] = 'You Are Under Budget'
     return Response(budget.data)
-
-
-def average_total_income_expenses_analytics(request):
-    days = int(request.query_params.get('days',30))
-    income_average = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='income').aggregate(income_average = Avg('price'))['income_average']
-    expense_average = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='expense').aggregate(expense_average = Avg('price'))['expense_average']
-    total_income = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='income').aggregate(total_income= Sum('price'))['total_income']
-    total_expense = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='expense').aggregate(total_expense = Sum('price'))['total_expense']
-    return {'income_average': income_average, 'expense_average' : expense_average, 'total_income' : total_income, 'total_expense' : total_expense}
-
-
-def data_for_piechart_analytics(request):
-    days = int(request.query_params.get('days', 30))
-    grouped_by_category = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days=days), transaction_type='expense').values('category').annotate(stats = Sum('price'))
-    return grouped_by_category
-
-
-def data_for_piechart_total(request):
-    grouped_by_category = Transaction_data.objects.filter(user_id=request.user, transaction_type='expense').values('category').annotate(stats = Sum('price'))
-    return grouped_by_category
 
 
 @api_view(['POST'])
