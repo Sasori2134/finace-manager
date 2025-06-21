@@ -1,14 +1,20 @@
 from rest_framework import serializers
 from api.models import Transaction_data, Budget, RecurringBills
 from .functions import check_float
+from rest_framework import validators
+from django.contrib.auth.models import User
+from .functions import check_float, validation_dictionary
 
 
 class ItemSerializer(serializers.ModelSerializer):
+    price = serializers.DecimalField(max_digits = 7, min_value=0.01, decimal_places=2, error_messages=validation_dictionary("DecimalField", 'price'))
+    category = serializers.CharField(max_length = 50, min_length=1, error_messages=validation_dictionary("CharField", "category"))
+    itemname = serializers.CharField(max_length = 200, min_length=1, error_messages=validation_dictionary("CharField", "item name"))
+    transaction_type = serializers.CharField(max_length=8, min_length=6, error_messages=validation_dictionary("CharField", "transaction_type"))
     class Meta:
         model = Transaction_data
 
         fields = [
-            'user_id',
             'date',
             'category',
             'itemname',
@@ -17,22 +23,17 @@ class ItemSerializer(serializers.ModelSerializer):
         ]
         
     def validate(self, data):
-        if data.get('price') <= 0:
-            raise serializers.ValidationError("Item Price Has To Be More Than 0")
+        data['category'] = data['category'].strip().lower()
+        data['itemname'] = data['itemname'].strip().lower()
         if data.get('category').isdigit() or check_float(data.get('category')):
             raise serializers.ValidationError("Category Can't Be A Number")
-        else:
-            if not data.get('category'):
-                data['category'] = 'unknown'
         if data.get('itemname').isdigit() or check_float(data.get('itemname')):
             raise serializers.ValidationError("Item Can't Be A Number")
-        else:
-            if not data.get('itemname'):
-                data['itemname'] = 'unknown'
         return data
         
     def create(self, validated_data):
         return Transaction_data.objects.create(user_id=self.context['user'], **validated_data)
+        
         
 
 class FilteredExpansesSerializer(serializers.ModelSerializer):
@@ -57,31 +58,9 @@ class FilteredExpansesInputSerializer(serializers.Serializer):
 
 
 class BudgetSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Budget
+    budget = serializers.DecimalField(max_digits = 7, decimal_places=2, min_value=0.01, error_messages=validation_dictionary("DecimalField",'Budget'))
+    category = serializers.CharField(max_length=50, min_length=1,error_messages=validation_dictionary("CharField", "Category"))
 
-        fields = [
-            'budget',
-            'category',
-            'date'
-        ]
-
-    def validate(self, data):
-        user = self.context['request'].user
-        if Budget.objects.filter(user_id=user, category=data['category']).exists():
-            raise serializers.ValidationError('Category Already Exists')
-        if not data.get('budget'):
-            raise serializers.ValidationError('You Have To Include Budget')
-        if not data.get('category') or data.get('category').isdigit() or check_float(data.get('category')):
-            raise serializers.ValidationError('You Have To Include Category')
-        return data
-
-
-    def create(self, validated_data):
-        return Budget.objects.create(user_id=self.context['request'].user, **validated_data)
-
-
-class SecondaryBudgetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Budget
 
@@ -92,8 +71,31 @@ class SecondaryBudgetSerializer(serializers.ModelSerializer):
             'date'
         ]
 
+    def validate(self, data):
+        user = self.context['request'].user
+        data['category'] = data['category'].strip().lower()
+        if Budget.objects.filter(user_id=user, category=data.get('category')).exists():
+            raise serializers.ValidationError('Category Already Exists')
+        if data.get('category').isdigit() or check_float(data.get('category')):
+            raise serializers.ValidationError('You Have To Include Valid Category')
+        return data
+
+
+    def create(self, validated_data):
+        return Budget.objects.create(user_id=self.context['request'].user, **validated_data)
+
+
 
 class RecurringBillsSerializer(serializers.ModelSerializer):
+    category = serializers.CharField(max_length=50, min_length=1, error_messages=validation_dictionary("CharField", "Category"))
+
+    price = serializers.DecimalField(max_digits=7, decimal_places=2, min_value=0.01, error_messages=validation_dictionary("DecimalField", "Price"))
+
+    date = serializers.IntegerField(min_value=1, max_value=31,error_messages={
+        'invalid' : 'You Have To Include Valid Day',
+        'min_value' : 'Day Has To Be More Than Zero',
+        'max_value' : 'Day Cant Be More Than 31'
+    })
     class Meta:
         model = RecurringBills
 
@@ -107,34 +109,24 @@ class RecurringBillsSerializer(serializers.ModelSerializer):
         ]
 
     def validate(self, data):
-        if data.get('category'):
-            data['category'] = data['category'].strip().lower()
-            user = self.context['request'].user
-            if data['category'].isdigit() or check_float(data['category']):
-                raise serializers.ValidationError("Invalid Input: Category Can't Be A Number")
-            elif RecurringBills.objects.filter(user_id=user, category= data['category']).exists():
-                raise serializers.ValidationError('You Can Only Have One Recurring Bill On One Category')
-        else:
-            raise serializers.ValidationError("You Have To Include Category")
-        if not data.get('price'):
-            raise serializers.ValidationError("You Have To Include Price")
-        elif data.get('price') <= 0:
-            raise serializers.ValidationError("Price Has To Be More Than 0")
-        if not data.get('date'):
-            raise serializers.ValidationError("You Have To Include Date")
-        elif data.get('date') == 0 or data.get('date') > 31:
-            raise serializers.ValidationError("Date Can't Be More Than Less Than 0 Or More Than 31")
+        data['category'] = data['category'].strip().lower()
+        data['itemname'] = data['itemname'].strip().lower()
+        user = self.context['request'].user
+        if data.get('category').isdigit() or check_float(data.get('category')):
+            raise serializers.ValidationError("Invalid Input: Category Can't Be A Number")
+        elif RecurringBills.objects.filter(user_id=user, category= data.get('category')).exists():
+            raise serializers.ValidationError('You Can Only Have One Recurring Bill On One Category')
         return data
+
     def create(self, validated_data):
         return RecurringBills.objects.create(user_id=self.context['request'].user, **validated_data)
 
 
 class RegisterInputSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=20)
-    password = serializers.CharField(max_length=50, allow_blank = True)
+    username = serializers.CharField(max_length=20, min_length=3,validators=[validators.UniqueValidator(queryset=User.objects.all(), message="Username Already In Use")],error_messages=validation_dictionary("CharField", "Username"))
+    password = serializers.CharField(max_length=50, min_length=6,error_messages=validation_dictionary("CharField", "Password"))
 
-    def validate_password(self,value):
-        if not value:
-            raise serializers.ValidationError('Password is Missing')
-        else:
-            return value
+    def validate_username(self, value):
+        if value.isdigit() or check_float(value):
+            raise serializers.ValidationError("Username Can't Be A Number")
+        return value

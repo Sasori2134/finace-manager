@@ -1,5 +1,5 @@
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from practice_project.serializers import ItemSerializer, FilteredExpansesSerializer, FilteredExpansesInputSerializer, BudgetSerializer, SecondaryBudgetSerializer, RecurringBillsSerializer, RegisterInputSerializer
+from practice_project.serializers import ItemSerializer, FilteredExpansesSerializer, FilteredExpansesInputSerializer, BudgetSerializer, RecurringBillsSerializer, RegisterInputSerializer
 from rest_framework.response import Response
 from .models import Transaction_data, Budget, RecurringBills
 from django.db.models import Avg, Max, Sum
@@ -68,6 +68,11 @@ class TransactiondataCreateApiView(generics.CreateAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+    def create(self, request, *args, **kwargs):
+        serialized_data = self.get_serializer(data = request.data)
+        serialized_data.is_valid(raise_exception=True)
+        self.perform_create(serialized_data)
+        return Response({'message' : 'Transaction Has Been Created Successfully'})
 
 class TransactiondataDestroyApiView(generics.DestroyAPIView):
     queryset = Transaction_data.objects.all()
@@ -82,6 +87,12 @@ class RecurringBillsCreateApiView(generics.CreateAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+    def create(self, request, *args, **kwargs):
+        serialized_data = self.get_serializer(data = request.data)
+        serialized_data.is_valid(raise_exception=True)
+        self.perform_create(serialized_data)
+        return Response({'message' : 'Recurring Bill Has Been Created Successfully'})
+
 
 class RecurringBillsDestroyApiView(generics.DestroyAPIView):
     queryset = RecurringBills.objects.all()
@@ -94,6 +105,12 @@ class BudgetCreateApiView(generics.CreateAPIView):
     serializer_class = BudgetSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
+    def create(self, request, *args, **kwargs):
+        serialized_data = self.get_serializer(data = request.data)
+        serialized_data.is_valid(raise_exception=True)
+        self.perform_create(serialized_data)
+        return Response({'message' : 'Budget Has Been Created Successfully'})
 
 
 class BudgetDestroyApiView(generics.DestroyAPIView):
@@ -180,7 +197,7 @@ def recent_transactions(request):
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def get_budget(request):
-    budget = SecondaryBudgetSerializer(Budget.objects.filter(user_id = request.user), many = True)
+    budget = BudgetSerializer(Budget.objects.filter(user_id = request.user), many = True)
     for i in budget.data:
         transactions = Transaction_data.objects.filter(user_id=request.user, date__gte=i['date'], category=i['category'], transaction_type='expense').values('category').annotate(category_sum = Sum('price')).values('category_sum')
         if transactions:
@@ -228,7 +245,7 @@ def log_out(request):
 @api_view(['POST'])
 def register(request):
     serialized_register = RegisterInputSerializer(data = request.data)
-    if serialized_register.is_valid():
+    if serialized_register.is_valid(raise_exception=True):
         try:
             user = User.objects.create_user(username = serialized_register.data['username'], password = serialized_register.data['password'])
             return Response(status = 201)
