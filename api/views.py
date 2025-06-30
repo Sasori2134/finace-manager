@@ -134,7 +134,7 @@ def filtering_expenses(request):
         if serializer.data.get('to_date'):
             fields_dictionary['date__lte'] = serializer.data.get('to_date').strip()
         if serializer.data.get('category'):
-            fields_dictionary['category'] = serializer.data.get('category').strip().lower()
+            fields_dictionary['category__iexact'] = serializer.data.get('category').strip().lower()
         if serializer.data.get('transaction_type'):
             fields_dictionary['transaction_type'] = serializer.data.get('transaction_type').strip().lower()
         serialized_data = ItemSerializer(Transaction_data.objects.filter(user_id=request.user, **fields_dictionary).order_by('-date'), many = True)
@@ -148,15 +148,15 @@ def filtering_expenses(request):
 def get_budget(request):
     budget = BudgetSerializer(Budget.objects.filter(user_id = request.user), many = True)
     for i in budget.data:
-        transactions = Transaction_data.objects.filter(user_id=request.user, date__gte=i['date'], category=i['category'], transaction_type='expense').values('category').annotate(category_sum = Sum('price')).values('category_sum')
+        transactions = Transaction_data.objects.filter(user_id=request.user, date__gte=i['date'], category=i['category__iexact'], transaction_type='expense').values('category').annotate(spent = Sum('price')).values('spent')
         if transactions:
-            i['category_sum'] = transactions[0]['category_sum']
-            if transactions[0]['category_sum'] < float(i['budget']):
-                i['status'] = f'You Are Under Budget By {float(i['budget']) - float(transactions[0]['category_sum'])}'
+            i['spent'] = transactions[0]['spent']
+            if transactions[0]['spent'] < float(i['budget']):
+                i['status'] = f'You Are Under Budget By {float(i['budget']) - float(transactions[0]['spent'])}'
             else:
                 i['status'] = 'You Are Over Budget'
         else:
-            i['category_sum'] = 0
+            i['spent'] = 0
             i['status'] = 'You Are Under Budget'
     return Response(budget.data)
 
@@ -170,6 +170,7 @@ def log_out(request):
         for_blacklist.blacklist()
         return Response({'message' : 'logout successful'}, status=205)
     return Response({'message' : 'invalid'}, status=400)
+
 
 @api_view(['POST'])
 def register(request):
