@@ -1,5 +1,5 @@
 from django.urls import path
-from . import views
+from . import views, dashboard_views, analytics_views
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 
@@ -16,6 +16,13 @@ urlpatterns = [
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/log_out', views.log_out, name = 'log_out'),
-    path('dashboard', views.dashboard, name = 'dashboard'),
-    path('analytics_page', views.analytics_page, name = 'analytics_page')
+    path('dashboard/monthly_average', dashboard_views.monthly_average, name='monthly_average'),
+    path('dashboard/monthly_data', dashboard_views.monthly_data, name='monthly_data'),
+    path('dashboard/total_stats', dashboard_views.total_stats, name='total_stats'),
+    path('dashboard/recent_transactions', dashboard_views.recent_transactions, name='recent_transactions'),
+    path('dashboard/data_for_piechart_total', dashboard_views.data_for_piechart_total, name='data_for_piechart_total'),
+    path('analytics_views/analytics_data', analytics_views.analytics_data, name='analytics_data'),
+    path('analytics_views/analytics_stats', analytics_views.analytics_stats, name='analytics_stats'),
+    path('analytics_views/data_for_piechart_analytics', analytics_views.data_for_piechart_analytics, name='data_for_piechart_analytics')
+
 ]

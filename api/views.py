@@ -12,8 +12,8 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.utils import IntegrityError
-from .dashboard_views import monthly_average, sum_of_transactions, total_balance_income_expenses, recent_transactions, data_for_piechart_total
-from .analytics_views import sum_of_transactions_analytics, average_total_income_expenses_analytics, data_for_piechart_analytics
+from .dashboard_views import monthly_average, monthly_data, total_stats, recent_transactions, data_for_piechart_total
+from .analytics_views import analytics_data, analytics_stats, data_for_piechart_analytics
 
 
 # Create your views here.
@@ -37,33 +37,6 @@ def recurring_bills_function(user):
                     serialized_data.save()
 
 
-@api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
-def dashboard(request):
-    recurring_bills_function(request.user)
-    return Response({
-        'stats' : total_balance_income_expenses(request),
-        'recent_transactions' : recent_transactions(request),
-        'monthly_chart' : sum_of_transactions(request),
-        'monthly_average' : monthly_average(request),
-        'data_for_piechart' : data_for_piechart_total(request)
-        })
-
-
-@api_view(['GET'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
-def analytics_page(request):
-    try:
-        return Response({
-        'stats' : average_total_income_expenses_analytics(request),
-        'piechart' : data_for_piechart_analytics(request),
-        'chart' : sum_of_transactions_analytics(request)
-        })
-    except ValueError:
-        return Response({'message' : 'Days Have To Be A Number'})
-
 class TransactiondataCreateApiView(generics.CreateAPIView):
     queryset = Transaction_data.objects.all()
     serializer_class = ItemSerializer
@@ -81,6 +54,9 @@ class TransactiondataDestroyApiView(generics.DestroyAPIView):
     serializer_class = ItemSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Transaction_data.objects.filter(user_id=self.request.user)
 
 
 class RecurringBillsCreateApiView(generics.CreateAPIView):
@@ -102,6 +78,9 @@ class RecurringBillsDestroyApiView(generics.DestroyAPIView):
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        return Transaction_data.objects.filter(user_id=self.request.user)
+
 class BudgetCreateApiView(generics.CreateAPIView):
     queryset = Budget.objects.all()
     serializer_class = BudgetSerializer
@@ -120,6 +99,9 @@ class BudgetDestroyApiView(generics.DestroyAPIView):
     serializer_class = BudgetSerializer
     authentication_classes = [JWTAuthentication]
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Transaction_data.objects.filter(user_id=self.request.user)
 
 
 @api_view(['GET'])
@@ -148,7 +130,7 @@ def filtering_expenses(request):
 def get_budget(request):
     budget = BudgetSerializer(Budget.objects.filter(user_id = request.user), many = True)
     for i in budget.data:
-        transactions = Transaction_data.objects.filter(user_id=request.user, date__gte=i['date'], category=i['category__iexact'], transaction_type='expense').values('category').annotate(spent = Sum('price')).values('spent')
+        transactions = Transaction_data.objects.filter(user_id=request.user, date__gte=i['date'], category__iexact=i['category'], transaction_type='expense').values('category').annotate(spent = Sum('price')).values('spent')
         if transactions:
             i['spent'] = transactions[0]['spent']
             if transactions[0]['spent'] < float(i['budget']):
