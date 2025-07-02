@@ -13,8 +13,8 @@ from django.utils import timezone
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def monthly_average(request):
-    expense_average = Transaction_data.objects.annotate(month = TruncMonth('date')).filter(user_id = request.user, transaction_type='expense').values('month').annotate(monthly_total = Sum('price')).aggregate(avg = Avg('monthly_total'))
-    Income_average = Transaction_data.objects.annotate(month = TruncMonth('date')).filter(user_id = request.user, transaction_type='income').values('month').annotate(monthly_total = Sum('price')).aggregate(avg = Avg('monthly_total'))
+    expense_average = Transaction_data.objects.annotate(year = ExtractYear('date'),month = TruncMonth('date')).filter(user_id = request.user, year = timezone.now().year,transaction_type='expense').values('month').annotate(monthly_total = Sum('price')).aggregate(avg = Avg('monthly_total'))
+    Income_average = Transaction_data.objects.annotate(year = ExtractYear('date'),month = TruncMonth('date')).filter(user_id = request.user, year = timezone.now().year,transaction_type='income').values('month').annotate(monthly_total = Sum('price')).aggregate(avg = Avg('monthly_total'))
     if expense_average['avg'] is None:
         expense_average['avg'] = 0
     if Income_average['avg'] is None:
@@ -42,14 +42,14 @@ def monthly_data(request):
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def total_stats(request):
-    expenses = Transaction_data.objects.filter(user_id=request.user, transaction_type='expense').aggregate(price = Sum('price'))
-    income = Transaction_data.objects.filter(user_id=request.user, transaction_type='income').aggregate(income = Sum('price'))
+    expenses = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user,year = timezone.now().year ,transaction_type='expense').aggregate(price = Sum('price'))
+    income = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, year = timezone.now().year,transaction_type='income').aggregate(income = Sum('price'))
     if expenses['price'] is None:
         expenses['price'] = 0
     if income['income'] is None:
         income['income'] = 0
     balance = round(income['income'] - expenses['price'],2)
-    return Response({'balance': balance, 'total_income' : income['income'], 'total_expense' : expenses['price']})
+    return Response({'balance': balance, 'total_income' : round(income['income'],2), 'total_expense' : round(expenses['price'],2)})
 
 
 @api_view(['GET'])
@@ -64,5 +64,5 @@ def recent_transactions(request):
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def data_for_piechart_total(request):
-    grouped_by_category = Transaction_data.objects.filter(user_id=request.user, transaction_type='expense').values('category').annotate(expense = Sum('price'))
+    grouped_by_category = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, year = timezone.now().year,transaction_type='expense').values('category').annotate(expense = Sum('price'))
     return Response(grouped_by_category)

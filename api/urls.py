@@ -21,8 +21,8 @@ urlpatterns = [
     path('dashboard/total_stats', dashboard_views.total_stats, name='total_stats'),
     path('dashboard/recent_transactions', dashboard_views.recent_transactions, name='recent_transactions'),
     path('dashboard/data_for_piechart_total', dashboard_views.data_for_piechart_total, name='data_for_piechart_total'),
-    path('analytics_views/analytics_data', analytics_views.analytics_data, name='analytics_data'),
-    path('analytics_views/analytics_stats', analytics_views.analytics_stats, name='analytics_stats'),
-    path('analytics_views/data_for_piechart_analytics', analytics_views.data_for_piechart_analytics, name='data_for_piechart_analytics')
+    path('analytics/analytics_data', analytics_views.analytics_data, name='analytics_data'),
+    path('analytics/analytics_stats', analytics_views.analytics_stats, name='analytics_stats'),
+    path('analytics/data_for_piechart_analytics', analytics_views.data_for_piechart_analytics, name='data_for_piechart_analytics')
 
 ]

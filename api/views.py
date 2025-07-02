@@ -79,7 +79,7 @@ class RecurringBillsDestroyApiView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Transaction_data.objects.filter(user_id=self.request.user)
+        return RecurringBills.objects.filter(user_id=self.request.user)
 
 class BudgetCreateApiView(generics.CreateAPIView):
     queryset = Budget.objects.all()
@@ -101,7 +101,7 @@ class BudgetDestroyApiView(generics.DestroyAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Transaction_data.objects.filter(user_id=self.request.user)
+        return Budget.objects.filter(user_id=self.request.user)
 
 
 @api_view(['GET'])

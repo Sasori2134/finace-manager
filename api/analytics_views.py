@@ -35,7 +35,7 @@ def analytics_stats(request):
     expense_average = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='expense').aggregate(expense_average = Avg('price'))['expense_average']
     total_income = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='income').aggregate(total_income= Sum('price'))['total_income']
     total_expense = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='expense').aggregate(total_expense = Sum('price'))['total_expense']
-    return Response({'income_average': income_average, 'expense_average' : expense_average, 'total_income' : total_income, 'total_expense' : total_expense})
+    return Response({'income_average': round(income_average,2), 'expense_average' : round(expense_average,2), 'total_income' : round(total_income,2), 'total_expense' : round(total_expense,2)})
 
 
 @api_view(['GET'])

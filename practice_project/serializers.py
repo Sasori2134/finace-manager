@@ -112,8 +112,6 @@ class RecurringBillsSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         data['category'] = data['category'].strip().lower()
-        data['itemname'] = data['itemname'].strip().lower()
-        data['transaction_type'] = data['transaction_type'].strip().lower()
         user = self.context['request'].user
         if data.get('category').isdigit() or check_float(data.get('category')):
             raise serializers.ValidationError("Invalid Input: Category Can't Be A Number")
