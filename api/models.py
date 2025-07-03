@@ -1,10 +1,9 @@
 from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
+from practice_project.functions import get_date
 
 # Create your models here.
-def get_date():
-    return timezone.now().date()
 class Transaction_data(models.Model):
     user_id = models.ForeignKey(User,on_delete = models.CASCADE,)
     date = models.DateField(default = get_date)

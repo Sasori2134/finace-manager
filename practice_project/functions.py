@@ -1,9 +1,14 @@
+from django.utils import timezone
+
 def check_float(value):
     try:
         float(value)
         return True
     except ValueError:
         return False
+
+def get_date():
+    return timezone.now().date()
 
 def validation_dictionary(field,word):
     match field:

@@ -89,7 +89,7 @@ class BudgetSerializer(serializers.ModelSerializer):
 
 
 class RecurringBillsSerializer(serializers.ModelSerializer):
-    category = serializers.CharField(max_length=50, min_length=1, error_messages=validation_dictionary("CharField", "Category"))
+    category = serializers.CharField(max_length=50, min_length=1,error_messages=validation_dictionary("CharField", "Category"))
 
     price = serializers.DecimalField(max_digits=7, decimal_places=2, min_value=Decimal('0.01'), error_messages=validation_dictionary("DecimalField", "Price"))
 

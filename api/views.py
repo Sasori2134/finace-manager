@@ -12,8 +12,7 @@ from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.db.utils import IntegrityError
-from .dashboard_views import monthly_average, monthly_data, total_stats, recent_transactions, data_for_piechart_total
-from .analytics_views import analytics_data, analytics_stats, data_for_piechart_analytics
+from practice_project.functions import get_date
 
 
 # Create your views here.
@@ -103,6 +102,14 @@ class BudgetDestroyApiView(generics.DestroyAPIView):
     def get_queryset(self):
         return Budget.objects.filter(user_id=self.request.user)
 
+@api_view(['GET'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def get_recurring_bills(request):
+    recurring_bills = RecurringBills.objects.filter(user_id=request.user)
+    serialized = RecurringBillsSerializer(recurring_bills, many=True)
+    return Response(serialized.data)
+
 
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
@@ -119,7 +126,7 @@ def filtering_expenses(request):
             fields_dictionary['category__iexact'] = serializer.data.get('category').strip().lower()
         if serializer.data.get('transaction_type'):
             fields_dictionary['transaction_type'] = serializer.data.get('transaction_type').strip().lower()
-        serialized_data = ItemSerializer(Transaction_data.objects.filter(user_id=request.user, **fields_dictionary).order_by('-date'), many = True)
+        serialized_data = FilteredExpansesSerializer(Transaction_data.objects.filter(user_id=request.user, **fields_dictionary).order_by('-date'), many = True)
         return Response(serialized_data.data, status = 200)
     return Response({'message':'Invalid Input'}, status = 409)
 
