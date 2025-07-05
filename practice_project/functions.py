@@ -26,4 +26,5 @@ def validation_dictionary(field,word):
             'min_value' : f'{word} Has To Be More Than 0',
             'max_digits' : f"{word} You Entered Is Not Valid (It's Too Big Of A Number)"
             }
+
     

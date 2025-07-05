@@ -17,23 +17,29 @@ from practice_project.functions import get_date
 
 # Create your views here.
 # unda gavaketo tavidan dzaan hardcoded ari
-def recurring_bills_function(user):
-    recurring_bills = RecurringBillsSerializer(RecurringBills.objects.filter(user_id=user), many=True)
+@api_view(['POST'])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def recurring_bills_function(request):
+    recurring_bills = RecurringBillsSerializer(RecurringBills.objects.filter(user_id=request.user), many=True)
     for i in recurring_bills.data:
-        transaction_data = ItemSerializer(Transaction_data.objects.filter(user_id=user, category=i['category'],itemname='recurring_bill',transaction_type='expense').order_by('-date'), many = True)
+        transaction_data = ItemSerializer(Transaction_data.objects.filter(user_id=request.user, category=i['category'],itemname='recurring_bill',transaction_type='expense').order_by('-date'), many = True)
         if transaction_data.data:
             date = datetime.strptime(transaction_data.data[0]['date'],'%Y-%m-%d').strftime('%Y-%m')
             if timezone.now().date().day >= i['date'] and date != timezone.now().date().strftime('%Y-%m'):
                 i['date'] = timezone.now().date()
-                serialized_data = ItemSerializer(data = i, context = {'user' : user})
+                serialized_data = ItemSerializer(data = i, context = {'request' : request})
                 if serialized_data.is_valid():
                     serialized_data.save()
+                    return Response(status=201)
         else:
             if timezone.now().date().day >= i['date']:
                 i['date'] = timezone.now().date()
-                serialized_data = ItemSerializer(data = i, context = {'user' : user})
+                serialized_data = ItemSerializer(data = i, context = {'request' : request})
                 if serialized_data.is_valid():
                     serialized_data.save()
+                    return Response(status=201)
+    return Response(status=200)
 
 
 class TransactiondataCreateApiView(generics.CreateAPIView):
@@ -128,7 +134,7 @@ def filtering_expenses(request):
             fields_dictionary['transaction_type'] = serializer.data.get('transaction_type').strip().lower()
         serialized_data = FilteredExpansesSerializer(Transaction_data.objects.filter(user_id=request.user, **fields_dictionary).order_by('-date'), many = True)
         return Response(serialized_data.data, status = 200)
-    return Response({'message':'Invalid Input'}, status = 409)
+    return Response({'message':'Invalid Input'}, status = 400)
 
 
 @api_view(['GET'])
@@ -165,11 +171,6 @@ def log_out(request):
 def register(request):
     serialized_register = RegisterInputSerializer(data = request.data)
     if serialized_register.is_valid(raise_exception=True):
-        try:
-            user = User.objects.create_user(username = serialized_register.data['username'], password = serialized_register.data['password'])
-            return Response(status = 201)
-        except IntegrityError:
-            return Response({'message' : 'Username Is Already In Use'}, status = 409)
-        except ValueError:
-            return Response({'message' : 'Username Is Missing'}, status = 409)
+        user = User.objects.create_user(username = serialized_register.data['username'], password = serialized_register.data['password'])
+        return Response(status = 201)
     return Response(serialized_register.errors)

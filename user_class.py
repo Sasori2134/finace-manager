@@ -28,7 +28,6 @@ class User:
         response = requests.delete(f'{self.endpoint}delete_budget/{pk}', headers = {'Authorization' : f'Bearer {self.access_token}'})
         return response.status_code
 
-
     def get_budget(self):
         response = requests.get(f'{self.endpoint}get_budget', headers = {'Authorization' : f'Bearer {self.access_token}'})
         return response.json()
@@ -46,6 +45,7 @@ class User:
         return response.status_code
 
     def dashboard(self):
+        check_recurring_bills = requests.post(f'{self.endpoint}check_recurring_bills', headers = {'Authorization' : f'Bearer {self.access_token}'})
         monthly_average = requests.get(f'{self.endpoint}dashboard/monthly_average', headers = {'Authorization' : f'Bearer {self.access_token}'})
         monthly_data = requests.get(f'{self.endpoint}dashboard/monthly_data', headers = {'Authorization' : f'Bearer {self.access_token}'})
         stats = requests.get(f'{self.endpoint}dashboard/total_stats', headers = {'Authorization' : f'Bearer {self.access_token}'})
@@ -57,6 +57,8 @@ class User:
         analytics_data = requests.get(f'{self.endpoint}analytics/analytics_data',params={'days' : days},headers = {'Authorization' : f'Bearer {self.access_token}'})
         stats = requests.get(f'{self.endpoint}analytics/analytics_stats', params={'days' : days}, headers = {'Authorization' : f'Bearer {self.access_token}'})
         piechart = requests.get(f'{self.endpoint}analytics/data_for_piechart_analytics', params={'days' : days}, headers = {'Authorization' : f'Bearer {self.access_token}'})
+        if analytics_data.status_code == 400:
+            return {'message' : 'Invalid Data Type Expected A Number'}
         return {'analytics_data' : analytics_data.json(), 'stats' : stats.json(), 'piechart' : piechart.json()}
 
     def log_out(self):
@@ -65,4 +67,4 @@ class User:
 
 tokens = requests.post(f'http://127.0.0.1:8000/api/token/', json={'username' : 'alex', 'password' : 'alex'})
 user = User(tokens.json()['access'],tokens.json()['refresh'])
-pprint(user.get_recurring_bills())
+pprint(user.create_recurring_bills('racxa',50,'25'))

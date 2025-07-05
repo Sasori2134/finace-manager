@@ -24,6 +24,7 @@ urlpatterns = [
     path('analytics/analytics_data', analytics_views.analytics_data, name='analytics_data'),
     path('analytics/analytics_stats', analytics_views.analytics_stats, name='analytics_stats'),
     path('analytics/data_for_piechart_analytics', analytics_views.data_for_piechart_analytics, name='data_for_piechart_analytics'),
-    path('get_recurring_bills',views.get_recurring_bills, name='get_recurring_bills')
+    path('get_recurring_bills',views.get_recurring_bills, name='get_recurring_bills'),
+    path('check_recurring_bills', views.recurring_bills_function, name='check_recurring_bills')
 
 ]

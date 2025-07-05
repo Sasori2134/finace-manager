@@ -13,7 +13,11 @@ from rest_framework.permissions import IsAuthenticated
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def analytics_data(request):
-    days = int(request.query_params.get('days', 30))
+    try:
+        days = int(request.query_params.get('days',30))
+        return days
+    except ValueError:
+        return Response({'message' : 'Invalid Data Type Expected A Number'}, status=400)
     grouped_by_day_expense = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, transaction_type='expense',year = timezone.now().year, date__range = (timezone.now().date() - timedelta(days=days-1),timezone.now().date())).values('date').annotate(daily_sum = Sum('price')).order_by('date')
     grouped_by_day_income = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, transaction_type='income',year = timezone.now().year, date__range = (timezone.now().date() - timedelta(days=days-1),timezone.now().date())).values('date').annotate(daily_sum = Sum('price')).order_by('date')
     start_date = datetime.now().date() - timedelta(days=days)
@@ -30,7 +34,11 @@ def analytics_data(request):
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def analytics_stats(request):
-    days = int(request.query_params.get('days',30))
+    try:
+        days = int(request.query_params.get('days',30))
+        return days
+    except ValueError:
+        return Response(status=400)
     income_average = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='income').aggregate(income_average = Avg('price'))['income_average']
     expense_average = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='expense').aggregate(expense_average = Avg('price'))['expense_average']
     total_income = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='income').aggregate(total_income= Sum('price'))['total_income']
@@ -42,6 +50,10 @@ def analytics_stats(request):
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def data_for_piechart_analytics(request):
-    days = int(request.query_params.get('days', 30))
+    try:
+        days = int(request.query_params.get('days',30))
+        return days
+    except ValueError:
+        return Response({'message' : 'Invalid Data Type Expected A Number'}, status=400)
     grouped_by_category = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days=days), transaction_type='expense').values('category').annotate(stats = Sum('price'))
     return Response(grouped_by_category)
