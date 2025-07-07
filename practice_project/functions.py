@@ -10,15 +10,22 @@ def check_float(value):
 def get_date():
     return timezone.now().date()
 
-def validation_dictionary(field,word):
+def validation_dictionary(field,word,min_length=None):
     match field:
         case "CharField":
-            return {
-                'invalid' : f'You Have To Include Valid {word}',
-                'blank' : f'You Have To Include Valid {word}',
-                'min_length' : f'{word} Has To Be More Than One Character',
-                'max_length' : f"{word} Can't Be More Than Fifty Characters Long"
-            }
+            if min_length:
+                return {
+                    'invalid' : f'You Have To Include Valid {word}',
+                    'blank' : f'You Have To Include Valid {word}',
+                    'min_length' : f'{word} Has To Be More Than {min_length-1} Character',
+                    'max_length' : f"{word} Can't Be More Than Fifty Characters Long"
+                }
+            else:
+                return {
+                    'invalid' : f'You Have To Include Valid {word}',
+                    'blank' : f'You Have To Include Valid {word}',
+                    'max_length' : f"{word} Can't Be More Than Fifty Characters Long"
+                }
         case "DecimalField":
             return {
             'invalid' : f'You Have To Include Valid {word}',

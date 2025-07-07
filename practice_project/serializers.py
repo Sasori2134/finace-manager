@@ -9,9 +9,9 @@ from decimal import Decimal
 
 class ItemSerializer(serializers.ModelSerializer):
     price = serializers.DecimalField(max_digits = 7, min_value=Decimal('0.01'), decimal_places=2, error_messages=validation_dictionary("DecimalField", 'price'))
-    category = serializers.CharField(max_length = 50, min_length=1, error_messages=validation_dictionary("CharField", "category"))
-    itemname = serializers.CharField(max_length = 200, min_length=1, error_messages=validation_dictionary("CharField", "item name"))
-    transaction_type = serializers.CharField(max_length=8, min_length=6, error_messages=validation_dictionary("CharField", "transaction_type"))
+    category = serializers.CharField(max_length = 50, error_messages=validation_dictionary("CharField", "category"))
+    itemname = serializers.CharField(max_length = 200, error_messages=validation_dictionary("CharField", "item name"))
+    transaction_type = serializers.CharField(max_length=8, min_length=6, error_messages=validation_dictionary("CharField", "transaction_type", min_length=6))
     class Meta:
         model = Transaction_data
 
@@ -61,7 +61,7 @@ class FilteredExpansesInputSerializer(serializers.Serializer):
 
 class BudgetSerializer(serializers.ModelSerializer):
     budget = serializers.DecimalField(max_digits = 7, decimal_places=2, min_value=Decimal('0.01'), error_messages=validation_dictionary("DecimalField",'Budget'))
-    category = serializers.CharField(max_length=50, min_length=1,error_messages=validation_dictionary("CharField", "Category"))
+    category = serializers.CharField(max_length=50,error_messages=validation_dictionary("CharField", "Category"))
 
     class Meta:
         model = Budget
@@ -89,7 +89,7 @@ class BudgetSerializer(serializers.ModelSerializer):
 
 
 class RecurringBillsSerializer(serializers.ModelSerializer):
-    category = serializers.CharField(max_length=50, min_length=1,error_messages=validation_dictionary("CharField", "Category"))
+    category = serializers.CharField(max_length=50,error_messages=validation_dictionary("CharField", "Category"))
 
     price = serializers.DecimalField(max_digits=7, decimal_places=2, min_value=Decimal('0.01'), error_messages=validation_dictionary("DecimalField", "Price"))
 
@@ -124,8 +124,8 @@ class RecurringBillsSerializer(serializers.ModelSerializer):
 
 
 class RegisterInputSerializer(serializers.Serializer):
-    username = serializers.CharField(max_length=20, min_length=3,validators=[validators.UniqueValidator(queryset=User.objects.all(), message="Username Already In Use")],error_messages=validation_dictionary("CharField", "Username"))
-    password = serializers.CharField(max_length=50, min_length=6,error_messages=validation_dictionary("CharField", "Password"))
+    username = serializers.CharField(max_length=20, min_length=3,validators=[validators.UniqueValidator(queryset=User.objects.all(), message="Username Already In Use")],error_messages=validation_dictionary("CharField", "Username",min_length=3))
+    password = serializers.CharField(max_length=50, min_length=6,error_messages=validation_dictionary("CharField", "Password",min_length=6))
 
     def validate_username(self, value):
         if value.isdigit() or check_float(value):

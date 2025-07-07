@@ -131,7 +131,8 @@ def filtering_expenses(request):
         if serializer.data.get('category'):
             fields_dictionary['category__iexact'] = serializer.data.get('category').strip().lower()
         if serializer.data.get('transaction_type'):
-            fields_dictionary['transaction_type'] = serializer.data.get('transaction_type').strip().lower()
+            if serializer.data.get('transaction_type') in ['expense','income']:
+                fields_dictionary['transaction_type'] = serializer.data.get('transaction_type').strip().lower()
         serialized_data = FilteredExpansesSerializer(Transaction_data.objects.filter(user_id=request.user, **fields_dictionary).order_by('-date'), many = True)
         return Response(serialized_data.data, status = 200)
     return Response({'message':'Invalid Input'}, status = 400)
