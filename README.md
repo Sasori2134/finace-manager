@@ -14,6 +14,7 @@ A powerful desktop and web-based personal finance management system built using 
 - 🔔 Shows when budget limits are exceeded
 - 🖥️ Modern PyQt5 GUI frontend (desktop)(coming soon)
 - 🌐 RESTful API backend using Django REST Framework
+- 📑 Pagination
 
 ## 🛠️ Tech Stack
 
@@ -26,7 +27,7 @@ A powerful desktop and web-based personal finance management system built using 
 
 ### 1. Clone the Repository
 ```git clone https://github.com/Sasori2134/finance-manager.git```
-```cd finance-manager```
+```cd Finance_Manager```
 ### 2. Setup Backend
 ### 3. Setup Frontend
 
@@ -45,7 +46,9 @@ A powerful desktop and web-based personal finance management system built using 
 ```python manage.py runserver```
 
 ##Frontend setup
-### 1.
+### 1.After installing requirements go into Frontend folder
+```cd Frontend```
+### 2. Run main.py and enjoy the app ❤️
 
 ### API Endpoints
 - 'add_transaction' - Create transaction
@@ -72,6 +75,8 @@ A powerful desktop and web-based personal finance management system built using 
 - 'analytics/data_for_piechart_analytics' - Pull data for piechart you can pass how many days you want
 
 Made with ❤️ by Alex (Sasori2134) — Finals Project
+Frontend made by Alex (Sasori2134)
+Backend made by Alex (Sasori2134)
 
 
 
