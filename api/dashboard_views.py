@@ -2,7 +2,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
-from practice_project.serializers import ItemSerializer
+from Finance_Manager.serializers import ItemSerializer
 from .models import Transaction_data
 from django.db.models import Avg, Sum
 from django.db.models.functions import TruncMonth, ExtractYear, ExtractMonth
@@ -56,7 +56,7 @@ def total_stats(request):
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def recent_transactions(request):
-    transactions = ItemSerializer(Transaction_data.objects.filter(user_id=request.user).order_by('-date')[:5], many=True)
+    transactions = ItemSerializer(Transaction_data.objects.filter(user_id=request.user).order_by('date')[:3], many=True)
     return Response(transactions.data)
 
 

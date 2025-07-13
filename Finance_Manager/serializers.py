@@ -8,7 +8,7 @@ from decimal import Decimal
 
 
 class ItemSerializer(serializers.ModelSerializer):
-    price = serializers.DecimalField(max_digits = 7, min_value=Decimal('0.01'), decimal_places=2, error_messages=validation_dictionary("DecimalField", 'price'))
+    price = serializers.DecimalField(max_digits = 10, min_value=Decimal('0.01'), decimal_places=2, error_messages=validation_dictionary("DecimalField", 'price'))
     category = serializers.CharField(max_length = 50, error_messages=validation_dictionary("CharField", "category"))
     itemname = serializers.CharField(max_length = 200, error_messages=validation_dictionary("CharField", "item name"))
     transaction_type = serializers.CharField(max_length=8, min_length=6, error_messages=validation_dictionary("CharField", "transaction_type", min_length=6))
@@ -16,6 +16,7 @@ class ItemSerializer(serializers.ModelSerializer):
         model = Transaction_data
 
         fields = [
+            'pk',
             'date',
             'category',
             'itemname',
@@ -27,6 +28,8 @@ class ItemSerializer(serializers.ModelSerializer):
         data['category'] = data['category'].strip().lower()
         data['itemname'] = data['itemname'].strip().lower()
         data['transaction_type'] = data['transaction_type'].strip().lower()
+        if data.get('transaction_type') not in ['expense','income']:
+            raise serializers.ValidationError('You Have To Input Valid Transaction Type')
         if data.get('category').isdigit() or check_float(data.get('category')):
             raise serializers.ValidationError("Category Can't Be A Number")
         if data.get('itemname').isdigit() or check_float(data.get('itemname')):
@@ -60,7 +63,7 @@ class FilteredExpansesInputSerializer(serializers.Serializer):
 
 
 class BudgetSerializer(serializers.ModelSerializer):
-    budget = serializers.DecimalField(max_digits = 7, decimal_places=2, min_value=Decimal('0.01'), error_messages=validation_dictionary("DecimalField",'Budget'))
+    budget = serializers.DecimalField(max_digits = 10, decimal_places=2, min_value=Decimal('0.01'), error_messages=validation_dictionary("DecimalField",'Budget'))
     category = serializers.CharField(max_length=50,error_messages=validation_dictionary("CharField", "Category"))
 
     class Meta:
@@ -91,7 +94,7 @@ class BudgetSerializer(serializers.ModelSerializer):
 class RecurringBillsSerializer(serializers.ModelSerializer):
     category = serializers.CharField(max_length=50,error_messages=validation_dictionary("CharField", "Category"))
 
-    price = serializers.DecimalField(max_digits=7, decimal_places=2, min_value=Decimal('0.01'), error_messages=validation_dictionary("DecimalField", "Price"))
+    price = serializers.DecimalField(max_digits=10, decimal_places=2, min_value=Decimal('0.01'), error_messages=validation_dictionary("DecimalField", "Price"))
 
     date = serializers.IntegerField(min_value=1, max_value=31,error_messages={
         'invalid' : 'You Have To Include Valid Day',

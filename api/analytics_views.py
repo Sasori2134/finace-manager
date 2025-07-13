@@ -15,8 +15,8 @@ from rest_framework.permissions import IsAuthenticated
 def analytics_data(request):
     try:
         days = int(request.query_params.get('days',30))
-        grouped_by_day_expense = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, transaction_type='expense',year = timezone.now().year, date__range = (timezone.now().date() - timedelta(days=days-1),timezone.now().date())).values('date').annotate(daily_sum = Sum('price')).order_by('date')
-        grouped_by_day_income = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, transaction_type='income',year = timezone.now().year, date__range = (timezone.now().date() - timedelta(days=days-1),timezone.now().date())).values('date').annotate(daily_sum = Sum('price')).order_by('date')
+        grouped_by_day_expense = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, transaction_type='expense',year = timezone.now().year, date__range = (timezone.now().date() - timedelta(days=days-1),timezone.now().date())).order_by('date').values('date').annotate(daily_sum = Sum('price')).order_by('date')
+        grouped_by_day_income = Transaction_data.objects.annotate(year = ExtractYear('date')).filter(user_id=request.user, transaction_type='income',year = timezone.now().year, date__range = (timezone.now().date() - timedelta(days=days-1),timezone.now().date())).order_by('date').values('date').annotate(daily_sum = Sum('price')).order_by('date')
         start_date = datetime.now().date() - timedelta(days=days)
         expense_dates = {((start_date + timedelta(days=i)).strftime('%b-%d')) : 0 for i in range(1,days+1)}
         income_dates = expense_dates.copy()
@@ -26,7 +26,7 @@ def analytics_data(request):
             income_dates[i['date'].strftime('%b-%d')] = i['daily_sum']
         return Response({'daily_expense' : expense_dates,'daily_income' : income_dates})
     except ValueError:
-        return Response({'message' : 'Invalid Data Type Expected A Number'}, status=400)
+            return Response({'message' : 'Invalid Data Type Expected A Number'}, status=400)
 
 
 @api_view(['GET'])
@@ -39,10 +39,17 @@ def analytics_stats(request):
         expense_average = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='expense').aggregate(expense_average = Avg('price'))['expense_average']
         total_income = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='income').aggregate(total_income= Sum('price'))['total_income']
         total_expense = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days = days), transaction_type='expense').aggregate(total_expense = Sum('price'))['total_expense']
+        if not income_average:
+            income_average = 0
+        if not expense_average:
+            expense_average = 0
+        if not total_income:
+            total_income = 0
+        if not total_expense:
+            total_expense = 0
         return Response({'income_average': round(income_average,2), 'expense_average' : round(expense_average,2), 'total_income' : round(total_income,2), 'total_expense' : round(total_expense,2)})
     except ValueError:
         return Response(status=400)
-
 
 @api_view(['GET'])
 @authentication_classes([JWTAuthentication])
@@ -50,7 +57,7 @@ def analytics_stats(request):
 def data_for_piechart_analytics(request):
     try:
         days = int(request.query_params.get('days',30))
-        grouped_by_category = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days=days), transaction_type='expense').values('category').annotate(stats = Sum('price'))
+        grouped_by_category = Transaction_data.objects.filter(user_id=request.user, date__gt = timezone.now().date() - timedelta(days=days), transaction_type='expense').values('category').annotate(expense = Sum('price'))
         return Response(grouped_by_category)
     except ValueError:
         return Response({'message' : 'Invalid Data Type Expected A Number'}, status=400)

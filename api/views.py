@@ -1,18 +1,16 @@
 from rest_framework.decorators import api_view, permission_classes, authentication_classes
-from practice_project.serializers import ItemSerializer, FilteredExpansesSerializer, FilteredExpansesInputSerializer, BudgetSerializer, RecurringBillsSerializer, RegisterInputSerializer
+from Finance_Manager.serializers import ItemSerializer, FilteredExpansesSerializer, FilteredExpansesInputSerializer, BudgetSerializer, RecurringBillsSerializer, RegisterInputSerializer
 from rest_framework.response import Response
 from .models import Transaction_data, Budget, RecurringBills
-from django.db.models import Avg, Max, Sum
-from django.db.models.functions import TruncMonth,TruncYear, TruncDay, ExtractYear, ExtractMonth, ExtractDay
-from rest_framework import generics, permissions, authentication
-from django.contrib.auth.models import User, auth
+from django.db.models import Sum
+from rest_framework import generics
+from django.contrib.auth.models import User
 from django.utils import timezone
-from datetime import datetime, timedelta
+from datetime import datetime
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.db.utils import IntegrityError
-from practice_project.functions import get_date
+from rest_framework.pagination import PageNumberPagination
 
 
 # Create your views here.
@@ -31,14 +29,12 @@ def recurring_bills_function(request):
                 serialized_data = ItemSerializer(data = i, context = {'request' : request})
                 if serialized_data.is_valid():
                     serialized_data.save()
-                    return Response(status=201)
         else:
             if timezone.now().date().day >= i['date']:
                 i['date'] = timezone.now().date()
                 serialized_data = ItemSerializer(data = i, context = {'request' : request})
                 if serialized_data.is_valid():
                     serialized_data.save()
-                    return Response(status=201)
     return Response(status=200)
 
 
@@ -52,7 +48,7 @@ class TransactiondataCreateApiView(generics.CreateAPIView):
         serialized_data = self.get_serializer(data = request.data)
         serialized_data.is_valid(raise_exception=True)
         self.perform_create(serialized_data)
-        return Response({'message' : 'Transaction Has Been Created Successfully'})
+        return Response({'pk' : serialized_data.data['pk']})
 
 class TransactiondataDestroyApiView(generics.DestroyAPIView):
     queryset = Transaction_data.objects.all()
@@ -74,7 +70,7 @@ class RecurringBillsCreateApiView(generics.CreateAPIView):
         serialized_data = self.get_serializer(data = request.data)
         serialized_data.is_valid(raise_exception=True)
         self.perform_create(serialized_data)
-        return Response({'message' : 'Recurring Bill Has Been Created Successfully'})
+        return Response({'pk' : serialized_data.data['pk']})
 
 
 class RecurringBillsDestroyApiView(generics.DestroyAPIView):
@@ -96,7 +92,7 @@ class BudgetCreateApiView(generics.CreateAPIView):
         serialized_data = self.get_serializer(data = request.data)
         serialized_data.is_valid(raise_exception=True)
         self.perform_create(serialized_data)
-        return Response({'message' : 'Budget Has Been Created Successfully'})
+        return Response({'pk' : serialized_data.data['pk']})
 
 
 class BudgetDestroyApiView(generics.DestroyAPIView):
@@ -131,10 +127,15 @@ def filtering_expenses(request):
         if serializer.data.get('category'):
             fields_dictionary['category__iexact'] = serializer.data.get('category').strip().lower()
         if serializer.data.get('transaction_type'):
-            if serializer.data.get('transaction_type') in ['expense','income']:
+            if serializer.data.get('transaction_type').strip().lower() in ['expense','income']:
                 fields_dictionary['transaction_type'] = serializer.data.get('transaction_type').strip().lower()
-        serialized_data = FilteredExpansesSerializer(Transaction_data.objects.filter(user_id=request.user, **fields_dictionary).order_by('-date'), many = True)
-        return Response(serialized_data.data, status = 200)
+        data = Transaction_data.objects.filter(user_id=request.user, **fields_dictionary).order_by('-date')
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        page = paginator.paginate_queryset(data,request)
+        serialized_data = FilteredExpansesSerializer(page, many = True)
+
+        return paginator.get_paginated_response(serialized_data.data)
     return Response({'message':'Invalid Input'}, status = 400)
 
 
@@ -142,13 +143,13 @@ def filtering_expenses(request):
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def get_budget(request):
-    budget = BudgetSerializer(Budget.objects.filter(user_id = request.user), many = True)
+    budget = BudgetSerializer(Budget.objects.filter(user_id = request.user).order_by('-date'), many = True)
     for i in budget.data:
         transactions = Transaction_data.objects.filter(user_id=request.user, date__gte=i['date'], category__iexact=i['category'], transaction_type='expense').values('category').annotate(spent = Sum('price')).values('spent')
         if transactions:
             i['spent'] = transactions[0]['spent']
-            if transactions[0]['spent'] < float(i['budget']):
-                i['status'] = f'You Are Under Budget By {float(i['budget']) - float(transactions[0]['spent'])}'
+            if i.get('spent',0) < float(i['budget']):
+                i['status'] = f'You Are Under Budget By {float(i['budget']) - float(i['spent'])}'
             else:
                 i['status'] = 'You Are Over Budget'
         else:
