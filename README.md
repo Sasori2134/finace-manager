@@ -25,10 +25,10 @@ A powerful desktop and web-based personal finance management system built using 
 ## 📦 Installation
 
 ### 1. Clone the Repository
-```git clone https://github.com/your-username/finance_manager.git```
+```git clone https://github.com/Sasori2134/finance-manager.git```
 ```cd finance-manager```
 ### 2. Setup Backend
-### 3. Setup Frontend (coming soon)
+### 3. Setup Frontend
 
 ## Backend Setup
 ### 1. Create and activate virtual environment:
@@ -43,6 +43,9 @@ A powerful desktop and web-based personal finance management system built using 
 ```python manage.py createsuperuser```
 ### 4. Run the server
 ```python manage.py runserver```
+
+##Frontend setup
+### 1.
 
 ### API Endpoints
 - 'add_transaction' - Create transaction
