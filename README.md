@@ -45,7 +45,7 @@ A powerful desktop and web-based personal finance management system built using 
 ### 4. Run the server
 ```python manage.py runserver```
 
-##Frontend setup
+## Frontend setup
 ### 1.After installing requirements go into Frontend folder
 ```cd Frontend```
 ### 2. Run main.py and enjoy the app ❤️
