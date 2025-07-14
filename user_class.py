@@ -64,7 +64,3 @@ class User:
     def log_out(self):
         response = requests.post(f'{self.endpoint}api/log_out', json = {'refresh' : self.refresh_token}, headers = {'Authorization' : f'Bearer {self.access_token}'})
         return response.status_code
-
-tokens = requests.post(f'http://127.0.0.1:8000/api/token/', json={'username' : 'alex', 'password' : 'alex'})
-user = User(tokens.json()['access'],tokens.json()['refresh'])
-pprint(user.create_recurring_bills('racxa',50,'25'))
