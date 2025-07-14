@@ -74,7 +74,7 @@ A powerful desktop and web-based personal finance management system built using 
 - 'analytics/analytics_stats' - Pull income average, expense average, total income and total expense you can pass how many days you want
 - 'analytics/data_for_piechart_analytics' - Pull data for piechart you can pass how many days you want
 
-Made with ❤️ by Alex (Sasori2134) — Finals Project
+Made with ❤️ by Alex (Sasori2134) — Finals Project.
 Frontend made by Alex (Sasori2134)
 Backend made by Alex (Sasori2134)
 
